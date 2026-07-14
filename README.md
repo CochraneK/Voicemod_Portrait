@@ -1,4 +1,4 @@
-# Voicemod Portraits
+# Voicemod Portrait
 
 一个纯前端、麦克风驱动的头像展示面板。页面包含 VoiceMod 官方 246 个头像，可根据麦克风音量让当前头像轻微缩放和上浮，不使用 AI，也不会上传音频。
 
