@@ -4,8 +4,10 @@ const stateKey = "voicemod-avatar-state";
 const backgroundDbName = "voicemod-avatar-assets";
 const backgroundStoreName = "backgrounds";
 const backgroundImageKey = "stage-background";
+const colorCacheKey = "voicemod-avatar-color-sort-v1";
 const els = {
   search: document.querySelector("#searchInput"),
+  sortMode: document.querySelector("#sortMode"),
   grid: document.querySelector("#avatarGrid"),
   stats: document.querySelector("#stats"),
   avatar: document.querySelector("#avatarImage"),
@@ -38,6 +40,9 @@ let audioContext;
 let analyser;
 let micData;
 let backgroundImageUrl = "";
+let colorSortPromise;
+let colorMetrics = readColorMetrics();
+let colorSortReady = ICONS.every((icon) => colorMetrics[icon.path]);
 
 function normalize(text) {
   return String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -59,6 +64,7 @@ function saveState() {
     bgMode: els.bgMode.value,
     customBg: els.customBg.value,
     driveMode: currentDriveMode(),
+    sortMode: els.sortMode.value,
     sensitivity: els.sensitivity.value,
     motion: els.motion.value,
   };
@@ -71,6 +77,18 @@ function readState() {
   } catch {
     return {};
   }
+}
+
+function readColorMetrics() {
+  try {
+    return JSON.parse(localStorage.getItem(colorCacheKey) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveColorMetrics() {
+  localStorage.setItem(colorCacheKey, JSON.stringify(colorMetrics));
 }
 
 function openBackgroundDb() {
@@ -188,14 +206,118 @@ async function toggleFullscreen() {
   els.fullscreenBtn.textContent = "全屏";
 }
 
+function rgbToHsl(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+  if (delta === 0) return { hue: 0, saturation: 0, lightness };
+
+  let hue;
+  if (max === r) hue = ((g - b) / delta) % 6;
+  else if (max === g) hue = (b - r) / delta + 2;
+  else hue = (r - g) / delta + 4;
+
+  hue = Math.round(hue * 60);
+  if (hue < 0) hue += 360;
+
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+  return { hue, saturation, lightness };
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function analyzeIconColor(icon) {
+  const image = await loadImage(icon.path);
+  const canvas = document.createElement("canvas");
+  const size = 36;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, size, size);
+  const pixels = ctx.getImageData(0, 0, size, size).data;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const alpha = pixels[i + 3];
+    if (alpha < 24) continue;
+    const pr = pixels[i];
+    const pg = pixels[i + 1];
+    const pb = pixels[i + 2];
+    if (pr < 18 && pg < 18 && pb < 18) continue;
+    r += pr;
+    g += pg;
+    b += pb;
+    count += 1;
+  }
+
+  if (!count) return { hue: 0, saturation: 0, lightness: 0 };
+  const hsl = rgbToHsl(r / count, g / count, b / count);
+  return {
+    hue: Number(hsl.hue.toFixed(2)),
+    saturation: Number(hsl.saturation.toFixed(4)),
+    lightness: Number(hsl.lightness.toFixed(4)),
+  };
+}
+
+function colorMetric(icon) {
+  return colorMetrics[icon.path] || { hue: 999, saturation: 0, lightness: 0 };
+}
+
+async function ensureColorSort() {
+  if (colorSortReady) return;
+  if (colorSortPromise) return colorSortPromise;
+
+  colorSortPromise = Promise.all(ICONS.map(async (icon) => {
+    if (!colorMetrics[icon.path]) {
+      colorMetrics[icon.path] = await analyzeIconColor(icon);
+    }
+  })).then(() => {
+    colorSortReady = true;
+    saveColorMetrics();
+  }).catch(() => {
+    colorSortReady = true;
+  }).finally(() => {
+    colorSortPromise = null;
+  });
+
+  return colorSortPromise;
+}
+
+function sortedIcons(list) {
+  if (els.sortMode.value !== "color") return list;
+  return [...list].sort((a, b) => {
+    const ca = colorMetric(a);
+    const cb = colorMetric(b);
+    return ca.hue - cb.hue
+      || cb.saturation - ca.saturation
+      || ca.lightness - cb.lightness
+      || a.name.localeCompare(b.name);
+  });
+}
+
 function filteredIcons() {
   const q = normalize(els.search.value);
-  return ICONS.filter((icon) => !q || normalize(icon.name).includes(q));
+  return sortedIcons(ICONS.filter((icon) => !q || normalize(icon.name).includes(q)));
 }
 
 function renderIcons() {
   const list = filteredIcons();
-  els.stats.textContent = `显示 ${list.length} / ${ICONS.length} 个头像`;
+  const suffix = els.sortMode.value === "color" && !colorSortReady ? " · 正在计算颜色" : "";
+  els.stats.textContent = `${list.length}个头像${suffix}`;
   els.grid.innerHTML = list.map((icon) => `
     <button
       class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
@@ -328,6 +450,7 @@ async function init() {
   if (saved.bgMode) els.bgMode.value = saved.bgMode;
   if (!saved.bgMode) els.bgMode.value = "black";
   if (saved.customBg) els.customBg.value = saved.customBg;
+  if (saved.sortMode) els.sortMode.value = saved.sortMode;
   if (saved.sensitivity) els.sensitivity.value = saved.sensitivity;
   if (saved.motion) els.motion.value = saved.motion;
   if (saved.bgMode === "image") {
@@ -345,7 +468,19 @@ async function init() {
   setAvatar(ICONS.find((icon) => icon.path === saved.avatarPath) || ICONS.find((icon) => icon.name === "Clean Mic") || ICONS[0]);
   setEnergy(0);
 
+  if (els.sortMode.value === "color") {
+    ensureColorSort().then(renderIcons);
+  }
+
   els.search.addEventListener("input", renderIcons);
+  els.sortMode.addEventListener("change", async () => {
+    saveState();
+    renderIcons();
+    if (els.sortMode.value === "color") {
+      await ensureColorSort();
+      renderIcons();
+    }
+  });
   els.avatarSelect.addEventListener("change", () => {
     const icon = ICONS.find((item) => item.path === els.avatarSelect.value) || ICONS[0];
     setAvatar(icon);

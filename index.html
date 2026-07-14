@@ -118,10 +118,19 @@
             <p class="section-kicker">Portrait Library</p>
             <div class="stats" id="stats"></div>
           </div>
-          <label class="search">
-            <span class="sr-only">搜索头像</span>
-            <input id="searchInput" type="search" placeholder="搜索头像名称" autocomplete="off" />
-          </label>
+          <div class="library-tools">
+            <label class="search">
+              <span class="sr-only">搜索头像</span>
+              <input id="searchInput" type="search" placeholder="搜索头像名称" autocomplete="off" />
+            </label>
+            <label class="sort-control">
+              <span class="sr-only">头像排序</span>
+              <select id="sortMode" aria-label="头像排序">
+                <option value="default">默认排序</option>
+                <option value="color">颜色渐变</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <div class="avatar-grid" id="avatarGrid" aria-live="polite" aria-label="246 个头像选项"></div>

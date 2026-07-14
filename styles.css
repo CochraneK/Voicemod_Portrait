@@ -536,8 +536,16 @@ input[type="search"] {
   border-top: 1px solid var(--line);
 }
 
-.library-toolbar .search {
-  width: min(360px, 46vw);
+.library-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) minmax(130px, 150px);
+  gap: 9px;
+  width: min(520px, 54vw);
+}
+
+.library-toolbar .search,
+.library-toolbar .sort-control {
+  min-width: 0;
 }
 
 .stats {
@@ -696,6 +704,11 @@ input[type="search"] {
   }
 
   .library-toolbar .search {
+    width: 100%;
+  }
+
+  .library-tools {
+    grid-template-columns: 1fr;
     width: 100%;
   }
 
