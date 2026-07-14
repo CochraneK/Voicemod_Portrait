@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voicemod Portraits</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <p class="brand-kicker">Avatar Studio</p>
+        <h1 class="hero-title">Voicemod Portraits</h1>
+      </header>
+
+      <section class="studio" aria-label="头像预览与控制">
+        <div class="stage-stack">
+          <section class="stage-card" id="stageCard" aria-label="当前头像预览">
+            <button class="stage-fullscreen" id="fullscreenBtn" type="button">全屏</button>
+
+            <div class="avatar-wrap" id="avatarWrap">
+              <div class="pulse-ring pulse-ring-outer" aria-hidden="true"></div>
+              <div class="pulse-ring pulse-ring-inner" aria-hidden="true"></div>
+              <img id="avatarImage" class="avatar" alt="当前头像" />
+            </div>
+
+            <div class="now">
+              <p>Selected</p>
+              <h2 id="nowTitle">未选择</h2>
+              <span>已选头像</span>
+            </div>
+
+            <div class="meter" aria-hidden="true">
+              <div id="meterFill"></div>
+            </div>
+          </section>
+
+          <section class="control-panel" aria-label="头像控制台">
+            <div class="control-heading">
+              <div>
+                <p>Control Deck</p>
+                <h2>头像控制台</h2>
+              </div>
+              <div class="mic-status" id="micStatus">
+                <span></span>
+                <strong>正在连接麦克风</strong>
+              </div>
+            </div>
+
+            <div class="control-grid">
+              <section class="control-group appearance-group" aria-label="角色与舞台">
+                <p class="group-title">角色与舞台</p>
+
+                <div class="appearance-row">
+                  <label class="field avatar-field">
+                    <span>主头像</span>
+                    <select id="avatarSelect"></select>
+                  </label>
+
+                  <div class="field background-field">
+                    <span>舞台背景</span>
+                    <div class="background-controls">
+                      <select id="bgMode" aria-label="舞台背景">
+                        <option value="transparent">透明</option>
+                        <option value="green">绿幕</option>
+                        <option value="blue">蓝幕</option>
+                        <option value="black" selected>黑色</option>
+                        <option value="white">白色</option>
+                        <option value="custom">自定义颜色</option>
+                        <option value="image">本地图片</option>
+                      </select>
+                      <label class="color-picker" title="选择自定义背景色">
+                        <input id="customBg" type="color" value="#20242a" aria-label="自定义背景色" />
+                      </label>
+                      <label class="image-picker" title="选择本地背景图片">
+                        <input id="backgroundImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                        <span>图片</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="control-group motion-group" aria-label="声音响应">
+                <p class="group-title">声音响应</p>
+
+                <label class="field range-field">
+                  <span>麦克风灵敏度 <output id="sensitivityValue">1.8x</output></span>
+                  <input id="sensitivity" type="range" min="0.5" max="4" step="0.1" value="1.8" />
+                </label>
+
+                <label class="field range-field">
+                  <span>动画强度 <output id="motionValue">1.0x</output></span>
+                  <input id="motion" type="range" min="0.2" max="2.5" step="0.1" value="1" />
+                </label>
+
+                <div class="response-actions">
+                  <button id="micBtn" type="button">开启麦克风驱动</button>
+                  <button id="resetBtn" type="button">重置动作</button>
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="library" aria-label="头像库">
+        <div class="library-toolbar">
+          <div>
+            <p class="section-kicker">Portrait Library</p>
+            <div class="stats" id="stats"></div>
+          </div>
+          <label class="search">
+            <span class="sr-only">搜索头像</span>
+            <input id="searchInput" type="search" placeholder="搜索头像名称" autocomplete="off" />
+          </label>
+        </div>
+
+        <div class="avatar-grid" id="avatarGrid" aria-live="polite" aria-label="246 个头像选项"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

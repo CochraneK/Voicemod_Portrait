@@ -1,0 +1,14 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Local output
+*.log
+*.tmp
+__pycache__/
