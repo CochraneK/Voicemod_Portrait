@@ -19,6 +19,7 @@ const els = {
   bgMode: document.querySelector("#bgMode"),
   customBg: document.querySelector("#customBg"),
   backgroundImage: document.querySelector("#backgroundImage"),
+  driveModeButtons: document.querySelectorAll("[data-drive-mode]"),
   sensitivity: document.querySelector("#sensitivity"),
   sensitivityValue: document.querySelector("#sensitivityValue"),
   motion: document.querySelector("#motion"),
@@ -29,6 +30,10 @@ const els = {
 
 let selectedIcon = ICONS[0];
 let micLevel = 0;
+let visualEnergy = 0;
+let voiceState = "";
+let loudUntil = 0;
+let lastPeak = 0;
 let audioContext;
 let analyser;
 let micData;
@@ -53,6 +58,7 @@ function saveState() {
     avatarPath: selectedIcon.path,
     bgMode: els.bgMode.value,
     customBg: els.customBg.value,
+    driveMode: currentDriveMode(),
     sensitivity: els.sensitivity.value,
     motion: els.motion.value,
   };
@@ -151,6 +157,25 @@ function setMicStatus(label, mode = "") {
   els.micStatus.querySelector("strong").textContent = label;
 }
 
+function currentDriveMode() {
+  return document.querySelector("[data-drive-mode].selected")?.dataset.driveMode || "stage1";
+}
+
+function setDriveMode(mode) {
+  const nextMode = mode === "stage1" ? "stage1" : "stage2";
+  els.driveModeButtons.forEach((button) => {
+    const selected = button.dataset.driveMode === nextMode;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  micLevel = 0;
+  visualEnergy = 0;
+  lastPeak = 0;
+  loudUntil = 0;
+  setEnergy(0);
+  saveState();
+}
+
 async function toggleFullscreen() {
   if (document.fullscreenElement !== els.stageCard) {
     await els.stageCard.requestFullscreen();
@@ -194,15 +219,58 @@ function setAvatar(icon) {
   renderIcons();
 }
 
-function setEnergy(level) {
+function setVoiceState(nextState) {
+  if (voiceState === nextState) return;
+  voiceState = nextState;
+  els.stageCard.dataset.voiceState = nextState;
+  els.avatarWrap.dataset.voiceState = nextState;
+}
+
+function setEnergy(level, rawLevel = level) {
   const motion = Number(els.motion.value);
   const energy = Math.min(1, Math.max(0, level));
-  const scale = 1 + energy * 0.065 * motion;
-  const lift = -energy * 7 * motion;
+  if (currentDriveMode() === "stage1") {
+    const scale = 1 + energy * 0.065 * motion;
+    const lift = -energy * 7 * motion;
+    setVoiceState("stage1");
+    els.avatarWrap.style.setProperty("--energy", energy.toFixed(3));
+    els.avatarWrap.style.setProperty("--scale", scale.toFixed(3));
+    els.avatarWrap.style.setProperty("--lift", `${lift.toFixed(1)}px`);
+    els.avatarWrap.style.setProperty("--squash", "1.000");
+    els.avatarWrap.style.setProperty("--tilt", "0deg");
+    els.avatarWrap.style.setProperty("--glow", "0.22");
+    els.meterFill.style.width = `${Math.round(energy * 100)}%`;
+    return;
+  }
+
+  const rawEnergy = Math.min(1, Math.max(0, rawLevel));
+  const now = performance.now();
+  const peakKick = Math.max(0, rawEnergy - lastPeak);
+  lastPeak = lastPeak * 0.9 + rawEnergy * 0.1;
+
+  if (rawEnergy > 0.72 || peakKick > 0.2) loudUntil = now + 180;
+  if (now < loudUntil) {
+    setVoiceState("loud");
+  } else if (energy > 0.11) {
+    setVoiceState("talking");
+  } else {
+    setVoiceState("idle");
+  }
+
+  const stateBoost = voiceState === "loud" ? 1.35 : voiceState === "talking" ? 1.1 : 0.75;
+  const scale = 1 + energy * 0.07 * motion * stateBoost;
+  const lift = -energy * 8.5 * motion * stateBoost;
+  const squash = voiceState === "loud" ? 1 - Math.min(0.045, energy * 0.045 * motion) : 1;
+  const tilt = voiceState === "talking"
+    ? Math.sin(now / 105) * energy * motion * 1.6
+    : Math.sin(now / 900) * 0.45;
+
   els.avatarWrap.style.setProperty("--energy", energy.toFixed(3));
   els.avatarWrap.style.setProperty("--scale", scale.toFixed(3));
   els.avatarWrap.style.setProperty("--lift", `${lift.toFixed(1)}px`);
-  els.avatarWrap.style.setProperty("--glow", (0.18 + energy * 0.7).toFixed(3));
+  els.avatarWrap.style.setProperty("--squash", squash.toFixed(3));
+  els.avatarWrap.style.setProperty("--tilt", `${tilt.toFixed(2)}deg`);
+  els.avatarWrap.style.setProperty("--glow", "0.22");
   els.meterFill.style.width = `${Math.round(energy * 100)}%`;
 }
 
@@ -224,14 +292,30 @@ function tickMic() {
   if (!analyser) return;
   analyser.getByteTimeDomainData(micData);
   let sum = 0;
+  let peak = 0;
   for (const value of micData) {
-    const centered = (value - 128) / 128;
+    const centered = Math.abs((value - 128) / 128);
     sum += centered * centered;
+    if (centered > peak) peak = centered;
   }
   const rms = Math.sqrt(sum / micData.length);
-  const target = Math.min(1, rms * Number(els.sensitivity.value) * 7);
-  micLevel = micLevel * 0.78 + target * 0.22;
-  setEnergy(micLevel);
+  const sensitivity = Number(els.sensitivity.value);
+  if (currentDriveMode() === "stage1") {
+    const target = Math.min(1, rms * sensitivity * 7);
+    micLevel = micLevel * 0.78 + target * 0.22;
+    setEnergy(micLevel, target);
+    requestAnimationFrame(tickMic);
+    return;
+  }
+
+  const rmsTarget = Math.min(1, rms * sensitivity * 7.2);
+  const peakTarget = Math.min(1, peak * sensitivity * 1.2);
+  const target = Math.max(rmsTarget, peakTarget * 0.38);
+  const attack = target > micLevel ? 0.42 : 0.08;
+  const release = target > visualEnergy ? 0.3 : 0.055;
+  micLevel += (target - micLevel) * attack;
+  visualEnergy += (micLevel - visualEnergy) * release;
+  setEnergy(visualEnergy, target);
   requestAnimationFrame(tickMic);
 }
 
@@ -256,8 +340,10 @@ async function init() {
     }
   }
   updateControlValues();
+  setDriveMode(saved.driveMode || "stage1");
 
   setAvatar(ICONS.find((icon) => icon.path === saved.avatarPath) || ICONS.find((icon) => icon.name === "Clean Mic") || ICONS[0]);
+  setEnergy(0);
 
   els.search.addEventListener("input", renderIcons);
   els.avatarSelect.addEventListener("change", () => {
@@ -276,7 +362,16 @@ async function init() {
       setMicStatus("麦克风不可用", "error");
     });
   });
-  els.resetBtn.addEventListener("click", () => setEnergy(0));
+  els.resetBtn.addEventListener("click", () => {
+    micLevel = 0;
+    visualEnergy = 0;
+    lastPeak = 0;
+    loudUntil = 0;
+    setEnergy(0);
+  });
+  els.driveModeButtons.forEach((button) => {
+    button.addEventListener("click", () => setDriveMode(button.dataset.driveMode));
+  });
   els.bgMode.addEventListener("change", applyBackground);
   els.customBg.addEventListener("input", () => {
     els.bgMode.value = "custom";
