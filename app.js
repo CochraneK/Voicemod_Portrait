@@ -1,5 +1,6 @@
 import { ICONS } from "./data.js";
 import { DICEBEER_ICONS } from "./dicebeer-data.js";
+import { AIFACE_ICONS } from "./aiface-data.js";
 
 const stateKey = "voicemod-avatar-state";
 const customAvatarKey = "voicemod-custom-avatars-v1";
@@ -16,6 +17,10 @@ const VOICEMOD_ICONS = ICONS.map((icon, index) => ({
 const DICEBEER_SOURCE_ICONS = DICEBEER_ICONS.map((icon) => ({
   ...icon,
   source: "dicebeer",
+}));
+const AIFACE_SOURCE_ICONS = AIFACE_ICONS.map((icon) => ({
+  ...icon,
+  source: "aiface",
 }));
 const dicebeerStyleOrder = [...new Set(DICEBEER_SOURCE_ICONS.map((icon) => icon.style))];
 let customIcons = readCustomIcons();
@@ -249,12 +254,13 @@ function saveColorMetrics() {
 }
 
 function allIcons() {
-  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...customIcons];
+  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...AIFACE_SOURCE_ICONS, ...customIcons];
 }
 
 function activeSourceIcons() {
   const source = els.sourceMode.value || "voicemod";
   if (source === "dicebeer") return DICEBEER_SOURCE_ICONS;
+  if (source === "aiface") return AIFACE_SOURCE_ICONS;
   if (source === "custom") return customIcons;
   return VOICEMOD_ICONS;
 }
@@ -281,6 +287,9 @@ function updateSortOptions() {
       <option value="default">默认排序</option>
     `;
     els.sortMode.value = previous === "default" ? "default" : "style";
+  } else if (source === "aiface") {
+    els.sortMode.innerHTML = `<option value="default">默认排序</option>`;
+    els.sortMode.value = "default";
   } else {
     els.sortMode.innerHTML = `<option value="default">默认排序</option>`;
     els.sortMode.value = "default";

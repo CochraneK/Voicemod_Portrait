@@ -29,6 +29,7 @@
 ## 功能
 
 - 246 个头像，支持搜索、缩略图选择和下拉选择
+- 头像库支持 `voicemod`、`dicebeer`、`aiface` 和 `custom` 分类
 - 默认一阶声音驱动：随麦克风音量放大、缩小、上浮
 - 可切换二阶声音驱动：加入 idle / talking / loud 状态和更细的动作反馈
 - 麦克风实时驱动，支持灵敏度和动画强度调节
@@ -36,6 +37,8 @@
 - 黑色、白色、绿幕、蓝幕、透明和自定义颜色背景
 - 支持选择本地背景图片，并保存在浏览器本地数据库中
 - 头像舞台全屏显示
+- `aiface` 分类可从本地 SeePrettyFace 数据集中随机抽取 300 张图片生成
+- `custom` 分类支持浏览器端上传、自动裁剪、右键重命名和删除
 - 桌面和移动端响应式布局
 - 所有设置均在浏览器本地运行
 
@@ -78,20 +81,52 @@ http://127.0.0.1:8787/
 
 麦克风音频仅通过浏览器 Web Audio API 在本机分析，页面不录音、不保存音频，也没有后端服务。本地背景图片保存在当前站点的 IndexedDB 中。
 
+## AI Face 数据集导入
+
+`aiface` 分类预留给本地下载的人脸数据集。当前推荐来源是 [a312863063/seeprettyface-dataset](https://github.com/a312863063/seeprettyface-dataset)，这是由 StyleGAN 生成的定制化人脸数据集。请先阅读原项目 README 和授权/使用限制；原项目说明可下载使用，但不要用于商业或不当用途。
+
+下载并解压数据集后，在项目目录运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\generate-aiface.ps1 -Source "D:\path\to\seeprettyface-dataset" -Count 300
+```
+
+脚本会从数据集目录递归随机抽取 300 张 `.jpg` / `.jpeg` / `.png` / `.webp` 图片，复制到 `assets/aiface/`，并生成 `aiface-data.js`。页面刷新后即可在 `aiface` 分类中查看。
+
 ## 项目结构
 
 ```text
 .
 |-- assets/
-|   `-- portraits/       # 246 张头像图片
+|   |-- portraits/       # 246 张头像图片
+|   |-- dicebeer/        # DiceBear 生成头像
+|   `-- aiface/          # 本地 SeePrettyFace 抽样后生成的 AI 人脸头像
 |-- app.js               # 页面交互与麦克风驱动
+|-- aiface-data.js       # aiface 分类头像清单
 |-- data.js              # 头像名称和文件路径
+|-- dicebeer-data.js     # dicebeer 分类头像清单
 |-- index.html           # 页面结构
 |-- docs/
 |   |-- screenshot.png
 |   |-- portrait-library.png
 |   `-- fullscreen.png
+|-- scripts/
+|   |-- generate-aiface.ps1
+|   `-- generate-dicebeer.ps1
 |-- styles.css           # 界面样式
 |-- start.bat            # Windows 双击启动
 `-- README.md
 ```
+
+## 参考与致谢
+
+感谢以下项目和数据来源：
+
+- [DiceBear](https://www.dicebear.com/)：开源头像生成库，本项目的 `dicebeer` 分类使用 DiceBear 风格生成。
+- [Avataaars](https://getavataaars.com/)：经典组合式头像项目，用作头像制作参考入口。
+- [Open Peeps](https://www.openpeeps.com/)：开源人物插画组件库，用作人物头像参考入口。
+- [a312863063/seeprettyface-dataset](https://github.com/a312863063/seeprettyface-dataset)：StyleGAN 生成的人脸数据集，作为 `aiface` 分类的推荐本地数据来源。
+- [Asian Face Image Dataset, AFD](https://github.com/X-zhangyang/Asian-Face-Image-Dataset-AFD-dataset)：亚洲人脸数据集参考入口。
+- [CASIA-FaceV5 / CAS-PEAL](https://iapr-tc4.org/face-datasets/)：人脸数据集参考入口。
+
+使用任何第三方图片、头像或数据集前，请自行确认对应项目的许可、署名要求、用途限制和肖像权风险。
