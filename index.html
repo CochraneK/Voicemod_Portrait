@@ -27,7 +27,6 @@
             <div class="now">
               <p>Selected</p>
               <h2 id="nowTitle">未选择</h2>
-              <span>已选头像</span>
             </div>
 
             <div class="meter" aria-hidden="true">
@@ -93,8 +92,8 @@
                 <p class="group-title">声音响应</p>
 
                 <label class="field range-field">
-                  <span>麦克风灵敏度 <output id="sensitivityValue">1.8x</output></span>
-                  <input id="sensitivity" type="range" min="0.5" max="4" step="0.1" value="1.8" />
+                  <span>麦克风灵敏度 <output id="sensitivityValue">max</output></span>
+                  <input id="sensitivity" type="range" min="0.5" max="4" step="0.1" value="4" />
                 </label>
 
                 <label class="field range-field">
@@ -118,7 +117,15 @@
             <p class="section-kicker">Portrait Library</p>
             <div class="stats" id="stats"></div>
           </div>
-          <div class="library-tools">
+          <div class="library-tools" id="libraryTools">
+            <label class="source-control">
+              <span class="sr-only">头像来源</span>
+              <select id="sourceMode" aria-label="头像来源">
+                <option value="voicemod">voicemod</option>
+                <option value="dicebeer">dicebeer</option>
+                <option value="custom">custom</option>
+              </select>
+            </label>
             <label class="search">
               <span class="sr-only">搜索头像</span>
               <input id="searchInput" type="search" placeholder="搜索头像名称" autocomplete="off" />
@@ -130,12 +137,52 @@
                 <option value="color">颜色渐变</option>
               </select>
             </label>
+            <label class="custom-avatar-picker" id="customAvatarPicker" title="上传并自动裁剪自定义头像" hidden>
+              <input id="customAvatarInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" multiple />
+              <span id="customAvatarPickerText">上传头像</span>
+            </label>
           </div>
         </div>
 
         <div class="avatar-grid" id="avatarGrid" aria-live="polite" aria-label="246 个头像选项"></div>
       </section>
+
+      <section class="resource-section" aria-labelledby="avatarResourcesTitle">
+        <div class="resource-heading">
+          <p class="section-kicker">Open Avatar Resources</p>
+          <h2 id="avatarResourcesTitle">开源头像制作</h2>
+        </div>
+
+        <div class="resource-grid">
+          <a class="resource-card" href="https://www.dicebear.com/" target="_blank" rel="noopener noreferrer">
+            <h3>DiceBear</h3>
+            <p>开源头像生成库，适合批量生成一致的 SVG/PNG 占位头像，也方便按 seed 做可复现头像。</p>
+            <span class="resource-link">访问 DiceBear →</span>
+          </a>
+
+          <a class="resource-card" href="https://getavataaars.com/" target="_blank" rel="noopener noreferrer">
+            <h3>Avataaars</h3>
+            <p>经典组合式人物头像，可调整发型、表情、服饰等元素，适合做基础人物角色库。</p>
+            <span class="resource-link">访问 Avataaars →</span>
+          </a>
+
+          <a class="resource-card" href="https://www.openpeeps.com/" target="_blank" rel="noopener noreferrer">
+            <h3>Open Peeps</h3>
+            <p>手绘人物插画组件库，人物姿态和多样性较好，适合作为中文人物角色设计参考。</p>
+            <span class="resource-link">访问 Open Peeps →</span>
+          </a>
+        </div>
+      </section>
     </main>
+
+    <div class="scroll-actions" aria-label="页面滚动快捷按钮">
+      <button class="scroll-jump" id="scrollTopBtn" type="button" aria-label="滚动到页面顶部">
+        <span>↑</span>
+      </button>
+      <button class="scroll-jump" id="scrollResourcesBtn" type="button" aria-label="滚动到底部开源头像制作区域">
+        <span>↓</span>
+      </button>
+    </div>
 
     <script type="module" src="./app.js"></script>
   </body>

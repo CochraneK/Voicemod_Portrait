@@ -1,13 +1,31 @@
 import { ICONS } from "./data.js";
+import { DICEBEER_ICONS } from "./dicebeer-data.js";
 
 const stateKey = "voicemod-avatar-state";
+const customAvatarKey = "voicemod-custom-avatars-v1";
 const backgroundDbName = "voicemod-avatar-assets";
 const backgroundStoreName = "backgrounds";
 const backgroundImageKey = "stage-background";
 const colorCacheKey = "voicemod-avatar-color-sort-v1";
+const VOICEMOD_ICONS = ICONS.map((icon, index) => ({
+  ...icon,
+  source: "voicemod",
+  order: index + 1,
+}));
+const DICEBEER_SOURCE_ICONS = DICEBEER_ICONS.map((icon) => ({
+  ...icon,
+  source: "dicebeer",
+}));
+const dicebeerStyleOrder = [...new Set(DICEBEER_SOURCE_ICONS.map((icon) => icon.style))];
+let customIcons = readCustomIcons();
 const els = {
   search: document.querySelector("#searchInput"),
+  sourceMode: document.querySelector("#sourceMode"),
   sortMode: document.querySelector("#sortMode"),
+  libraryTools: document.querySelector("#libraryTools"),
+  customAvatarPicker: document.querySelector("#customAvatarPicker"),
+  customAvatarPickerText: document.querySelector("#customAvatarPickerText"),
+  customAvatarInput: document.querySelector("#customAvatarInput"),
   grid: document.querySelector("#avatarGrid"),
   stats: document.querySelector("#stats"),
   avatar: document.querySelector("#avatarImage"),
@@ -28,12 +46,17 @@ const els = {
   motionValue: document.querySelector("#motionValue"),
   meterFill: document.querySelector("#meterFill"),
   micStatus: document.querySelector("#micStatus"),
+  scrollTopBtn: document.querySelector("#scrollTopBtn"),
+  scrollResourcesBtn: document.querySelector("#scrollResourcesBtn"),
+  resourceSection: document.querySelector(".resource-section"),
 };
 
-let selectedIcon = ICONS[0];
+let selectedIcon = VOICEMOD_ICONS[0];
 let micLevel = 0;
 let visualEnergy = 0;
 let voiceState = "";
+let customContextPath = "";
+let customRenamePath = "";
 let loudUntil = 0;
 let lastPeak = 0;
 let audioContext;
@@ -42,7 +65,7 @@ let micData;
 let backgroundImageUrl = "";
 let colorSortPromise;
 let colorMetrics = readColorMetrics();
-let colorSortReady = ICONS.every((icon) => colorMetrics[icon.path]);
+let colorSortReady = VOICEMOD_ICONS.every((icon) => colorMetrics[icon.path]);
 
 function normalize(text) {
   return String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -61,6 +84,7 @@ function escapeHtml(value) {
 function saveState() {
   const payload = {
     avatarPath: selectedIcon.path,
+    sourceMode: els.sourceMode.value,
     bgMode: els.bgMode.value,
     customBg: els.customBg.value,
     driveMode: currentDriveMode(),
@@ -87,8 +111,177 @@ function readColorMetrics() {
   }
 }
 
+function readCustomIcons() {
+  try {
+    return JSON.parse(localStorage.getItem(customAvatarKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomIcons() {
+  localStorage.setItem(customAvatarKey, JSON.stringify(customIcons));
+}
+
+function loadImageElement(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => resolve({
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      release: () => URL.revokeObjectURL(url),
+    });
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`无法读取图片：${file.name}`));
+    };
+    image.src = url;
+  });
+}
+
+async function decodeAvatarImage(file) {
+  if ("createImageBitmap" in window) {
+    try {
+      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        release: () => bitmap.close(),
+      };
+    } catch {
+      // Fall back to an image element for browsers or formats not supported by ImageBitmap.
+    }
+  }
+  return loadImageElement(file);
+}
+
+function squareCrop(width, height, centerX, centerY, requestedSize) {
+  const size = Math.min(Math.max(64, requestedSize), width, height);
+  const x = Math.min(Math.max(0, centerX - size / 2), width - size);
+  const y = Math.min(Math.max(0, centerY - size / 2), height - size);
+  return { x, y, size };
+}
+
+function fallbackPortraitCrop(width, height) {
+  const size = Math.min(width, height);
+  const x = (width - size) / 2;
+  const y = height > width ? (height - size) * 0.18 : (height - size) / 2;
+  return { x, y, size };
+}
+
+async function detectPortraitCrop(source, width, height) {
+  if (typeof window.FaceDetector === "function") {
+    try {
+      const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 8 });
+      const faces = await detector.detect(source);
+      const face = faces
+        .map((item) => item.boundingBox)
+        .filter(Boolean)
+        .sort((a, b) => b.width * b.height - a.width * a.height)[0];
+      if (face) {
+        const requestedSize = Math.max(face.width * 2.6, face.height * 2.8, Math.min(width, height) * 0.42);
+        return squareCrop(
+          width,
+          height,
+          face.x + face.width / 2,
+          face.y + face.height * 0.85,
+          requestedSize,
+        );
+      }
+    } catch {
+      // FaceDetector is optional; the deterministic upper-center crop below always works.
+    }
+  }
+  return fallbackPortraitCrop(width, height);
+}
+
+async function cropAvatarFile(file) {
+  const decoded = await decodeAvatarImage(file);
+  try {
+    const crop = await detectPortraitCrop(decoded.source, decoded.width, decoded.height);
+    const canvas = document.createElement("canvas");
+    const outputSize = 512;
+    canvas.width = outputSize;
+    canvas.height = outputSize;
+    const context = canvas.getContext("2d", { alpha: true });
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(
+      decoded.source,
+      crop.x,
+      crop.y,
+      crop.size,
+      crop.size,
+      0,
+      0,
+      outputSize,
+      outputSize,
+    );
+    return canvas.toDataURL("image/webp", 0.9);
+  } finally {
+    decoded.release();
+  }
+}
+
+function setCustomUploadBusy(isBusy, restingText = "上传头像") {
+  els.customAvatarInput.disabled = isBusy;
+  els.customAvatarPicker.classList.toggle("is-busy", isBusy);
+  els.customAvatarPickerText.textContent = isBusy ? "自动裁剪中…" : restingText;
+}
+
 function saveColorMetrics() {
   localStorage.setItem(colorCacheKey, JSON.stringify(colorMetrics));
+}
+
+function allIcons() {
+  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...customIcons];
+}
+
+function activeSourceIcons() {
+  const source = els.sourceMode.value || "voicemod";
+  if (source === "dicebeer") return DICEBEER_SOURCE_ICONS;
+  if (source === "custom") return customIcons;
+  return VOICEMOD_ICONS;
+}
+
+function updateSourceControls() {
+  const showCustomUpload = els.sourceMode.value === "custom";
+  els.customAvatarPicker.hidden = !showCustomUpload;
+  els.libraryTools.classList.toggle("show-custom-upload", showCustomUpload);
+}
+
+function updateSortOptions() {
+  const source = els.sourceMode.value || "voicemod";
+  updateSourceControls();
+  const previous = els.sortMode.value;
+  if (source === "voicemod") {
+    els.sortMode.innerHTML = `
+      <option value="default">默认排序</option>
+      <option value="color">颜色渐变</option>
+    `;
+    els.sortMode.value = previous === "color" ? "color" : "default";
+  } else if (source === "dicebeer") {
+    els.sortMode.innerHTML = `
+      <option value="style">类别排序</option>
+      <option value="default">默认排序</option>
+    `;
+    els.sortMode.value = previous === "default" ? "default" : "style";
+  } else {
+    els.sortMode.innerHTML = `<option value="default">默认排序</option>`;
+    els.sortMode.value = "default";
+  }
+}
+
+function populateAvatarSelect(list = filteredIcons()) {
+  els.avatarSelect.innerHTML = list
+    .map((icon) => `<option value="${escapeHtml(icon.path)}">${escapeHtml(icon.name)}</option>`)
+    .join("");
+  if (list.some((icon) => icon.path === selectedIcon.path)) {
+    els.avatarSelect.value = selectedIcon.path;
+  }
 }
 
 function openBackgroundDb() {
@@ -144,10 +337,20 @@ function backgroundValue() {
   return els.bgMode.value === "custom" ? els.customBg.value : (presets[els.bgMode.value] || "#000000");
 }
 
+function isLightColor(value) {
+  const match = String(value || "").match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!match) return false;
+  const [, r, g, b] = match.map((part) => parseInt(part, 16));
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.55;
+}
+
 function applyBackground() {
   const isTransparent = els.bgMode.value === "transparent";
   const isImage = els.bgMode.value === "image" && backgroundImageUrl;
+  const background = backgroundValue();
   els.stageCard.classList.toggle("transparent-preview", isTransparent);
+  els.stageCard.classList.toggle("light-background", !isImage && isLightColor(background));
 
   if (isImage) {
     els.stageCard.style.backgroundColor = "#000000";
@@ -156,7 +359,7 @@ function applyBackground() {
     els.stageCard.style.backgroundRepeat = "no-repeat";
     els.stageCard.style.backgroundSize = "cover";
   } else {
-    els.stageCard.style.background = backgroundValue();
+    els.stageCard.style.background = background;
     els.stageCard.style.backgroundImage = "";
     els.stageCard.style.backgroundPosition = "";
     els.stageCard.style.backgroundRepeat = "";
@@ -166,7 +369,9 @@ function applyBackground() {
 }
 
 function updateControlValues() {
-  els.sensitivityValue.textContent = `${Number(els.sensitivity.value).toFixed(1)}x`;
+  const sensitivity = Number(els.sensitivity.value);
+  const maxSensitivity = Number(els.sensitivity.max);
+  els.sensitivityValue.textContent = sensitivity >= maxSensitivity ? "max" : `${sensitivity.toFixed(1)}x`;
   els.motionValue.textContent = `${Number(els.motion.value).toFixed(1)}x`;
 }
 
@@ -281,7 +486,7 @@ async function ensureColorSort() {
   if (colorSortReady) return;
   if (colorSortPromise) return colorSortPromise;
 
-  colorSortPromise = Promise.all(ICONS.map(async (icon) => {
+  colorSortPromise = Promise.all(VOICEMOD_ICONS.map(async (icon) => {
     if (!colorMetrics[icon.path]) {
       colorMetrics[icon.path] = await analyzeIconColor(icon);
     }
@@ -298,7 +503,14 @@ async function ensureColorSort() {
 }
 
 function sortedIcons(list) {
-  if (els.sortMode.value !== "color") return list;
+  if (els.sourceMode.value === "dicebeer" && els.sortMode.value === "style") {
+    return [...list].sort((a, b) => {
+      const sa = dicebeerStyleOrder.indexOf(a.style);
+      const sb = dicebeerStyleOrder.indexOf(b.style);
+      return sa - sb || a.order - b.order || a.name.localeCompare(b.name);
+    });
+  }
+  if (els.sourceMode.value !== "voicemod" || els.sortMode.value !== "color") return list;
   return [...list].sort((a, b) => {
     const ca = colorMetric(a);
     const cb = colorMetric(b);
@@ -311,23 +523,31 @@ function sortedIcons(list) {
 
 function filteredIcons() {
   const q = normalize(els.search.value);
-  return sortedIcons(ICONS.filter((icon) => !q || normalize(icon.name).includes(q)));
+  return sortedIcons(activeSourceIcons().filter((icon) => {
+    const haystack = `${icon.name} ${icon.style || ""} ${icon.source || ""}`;
+    return !q || normalize(haystack).includes(q);
+  }));
 }
 
 function renderIcons() {
   const list = filteredIcons();
-  const suffix = els.sortMode.value === "color" && !colorSortReady ? " · 正在计算颜色" : "";
-  els.stats.textContent = `${list.length}个头像${suffix}`;
+  const suffix = els.sourceMode.value === "voicemod" && els.sortMode.value === "color" && !colorSortReady ? " · 正在计算颜色" : "";
+  const sourceLabel = els.sourceMode.value || "voicemod";
+  els.stats.textContent = `${sourceLabel} · ${list.length}个头像${suffix}`;
+  populateAvatarSelect(list);
   els.grid.innerHTML = list.map((icon) => `
-    <button
-      class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
-      type="button"
-      data-avatar="${escapeHtml(icon.path)}"
-      title="${escapeHtml(icon.name)}"
-    >
-      <img src="${escapeHtml(icon.path)}" alt="${escapeHtml(icon.name)}" loading="lazy" />
-      <span>${escapeHtml(icon.name)}</span>
-    </button>
+    <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""}">
+      <button
+        class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
+        type="button"
+        data-avatar="${escapeHtml(icon.path)}"
+        title="${escapeHtml(icon.name)}"
+      >
+        <img src="${escapeHtml(icon.path)}" alt="${escapeHtml(icon.name)}" loading="lazy" />
+        <span>${escapeHtml(icon.name)}</span>
+        ${icon.style ? `<em>${escapeHtml(icon.style)}</em>` : ""}
+      </button>
+    </div>
   `).join("");
 }
 
@@ -335,10 +555,145 @@ function setAvatar(icon) {
   selectedIcon = icon;
   els.avatar.src = icon.path;
   els.avatar.alt = icon.name;
-  els.avatarSelect.value = icon.path;
+  if ([...els.avatarSelect.options].some((option) => option.value === icon.path)) {
+    els.avatarSelect.value = icon.path;
+  }
   els.nowTitle.textContent = icon.name;
   saveState();
   renderIcons();
+}
+
+function commitCustomAvatarName(path, name) {
+  const icon = customIcons.find((item) => item.path === path);
+  if (!icon) return;
+
+  const nextName = String(name || "").trim();
+  if (!nextName || nextName === icon.name) return;
+
+  icon.name = nextName.slice(0, 60);
+  saveCustomIcons();
+  if (selectedIcon.path === path) {
+    selectedIcon = icon;
+    els.avatar.alt = icon.name;
+    els.nowTitle.textContent = icon.name;
+    saveState();
+  }
+  renderIcons();
+}
+
+function ensureCustomRenameDialog() {
+  let dialog = document.querySelector("#customAvatarRenameDialog");
+  if (dialog) return dialog;
+
+  dialog = document.createElement("div");
+  dialog.id = "customAvatarRenameDialog";
+  dialog.className = "custom-rename-modal";
+  dialog.hidden = true;
+  dialog.innerHTML = `
+    <form class="custom-rename-box" role="dialog" aria-modal="true" aria-labelledby="customRenameTitle">
+      <h3 id="customRenameTitle">重命名头像</h3>
+      <input id="customRenameInput" type="text" maxlength="60" autocomplete="off" />
+      <div class="custom-rename-actions">
+        <button type="button" data-rename-cancel>取消</button>
+        <button type="submit">确认</button>
+      </div>
+    </form>
+  `;
+  document.body.appendChild(dialog);
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog || event.target.closest("[data-rename-cancel]")) closeCustomRenameDialog();
+  });
+  dialog.querySelector("form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = dialog.querySelector("#customRenameInput");
+    commitCustomAvatarName(customRenamePath, input.value);
+    closeCustomRenameDialog();
+  });
+
+  return dialog;
+}
+
+function openCustomRenameDialog(path) {
+  const icon = customIcons.find((item) => item.path === path);
+  if (!icon) return;
+
+  const dialog = ensureCustomRenameDialog();
+  const input = dialog.querySelector("#customRenameInput");
+  customRenamePath = path;
+  input.value = icon.name;
+  dialog.hidden = false;
+  window.setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 0);
+}
+
+function closeCustomRenameDialog() {
+  const dialog = document.querySelector("#customAvatarRenameDialog");
+  if (dialog) dialog.hidden = true;
+  customRenamePath = "";
+}
+
+function renameCustomAvatar(path) {
+  openCustomRenameDialog(path);
+}
+
+function deleteCustomAvatar(path) {
+  const icon = customIcons.find((item) => item.path === path);
+  if (!icon) return;
+  if (!window.confirm(`删除自定义头像“${icon.name}”？`)) return;
+
+  customIcons = customIcons.filter((item) => item.path !== path);
+  saveCustomIcons();
+
+  if (selectedIcon.path === path) {
+    const replacement = customIcons[0] || VOICEMOD_ICONS[0];
+    if (!customIcons.length) {
+      els.sourceMode.value = "voicemod";
+      updateSortOptions();
+    }
+    setAvatar(replacement);
+    return;
+  }
+
+  renderIcons();
+}
+
+function ensureCustomContextMenu() {
+  let menu = document.querySelector("#customAvatarContextMenu");
+  if (menu) return menu;
+
+  menu = document.createElement("div");
+  menu.id = "customAvatarContextMenu";
+  menu.className = "custom-avatar-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+  menu.innerHTML = `
+    <button type="button" data-custom-menu-action="rename" role="menuitem">重命名</button>
+    <button type="button" data-custom-menu-action="delete" role="menuitem">删除</button>
+  `;
+  document.body.appendChild(menu);
+  return menu;
+}
+
+function hideCustomContextMenu() {
+  const menu = document.querySelector("#customAvatarContextMenu");
+  if (menu) menu.hidden = true;
+  customContextPath = "";
+}
+
+function showCustomContextMenu(event, path) {
+  const menu = ensureCustomContextMenu();
+  customContextPath = path;
+  menu.hidden = false;
+
+  const menuWidth = menu.offsetWidth || 112;
+  const menuHeight = menu.offsetHeight || 78;
+  const left = Math.min(event.clientX, window.innerWidth - menuWidth - 8);
+  const top = Math.min(event.clientY, window.innerHeight - menuHeight - 8);
+  menu.style.left = `${Math.max(8, left)}px`;
+  menu.style.top = `${Math.max(8, top)}px`;
 }
 
 function setVoiceState(nextState) {
@@ -443,15 +798,16 @@ function tickMic() {
 
 async function init() {
   const saved = readState();
-  els.avatarSelect.innerHTML = ICONS
-    .map((icon) => `<option value="${escapeHtml(icon.path)}">${escapeHtml(icon.name)}</option>`)
-    .join("");
 
+  if (saved.sourceMode) els.sourceMode.value = saved.sourceMode;
+  updateSortOptions();
   if (saved.bgMode) els.bgMode.value = saved.bgMode;
   if (!saved.bgMode) els.bgMode.value = "black";
   if (saved.customBg) els.customBg.value = saved.customBg;
-  if (saved.sortMode) els.sortMode.value = saved.sortMode;
-  if (saved.sensitivity) els.sensitivity.value = saved.sensitivity;
+  if (saved.sortMode && [...els.sortMode.options].some((option) => option.value === saved.sortMode)) {
+    els.sortMode.value = saved.sortMode;
+  }
+  if (saved.sensitivity && saved.sensitivity !== "1.8") els.sensitivity.value = saved.sensitivity;
   if (saved.motion) els.motion.value = saved.motion;
   if (saved.bgMode === "image") {
     try {
@@ -465,31 +821,105 @@ async function init() {
   updateControlValues();
   setDriveMode(saved.driveMode || "stage1");
 
-  setAvatar(ICONS.find((icon) => icon.path === saved.avatarPath) || ICONS.find((icon) => icon.name === "Clean Mic") || ICONS[0]);
+  setAvatar(allIcons().find((icon) => icon.path === saved.avatarPath) || VOICEMOD_ICONS.find((icon) => icon.name === "Clean Mic") || VOICEMOD_ICONS[0]);
   setEnergy(0);
 
-  if (els.sortMode.value === "color") {
+  if (els.sourceMode.value === "voicemod" && els.sortMode.value === "color") {
     ensureColorSort().then(renderIcons);
   }
 
   els.search.addEventListener("input", renderIcons);
+  els.sourceMode.addEventListener("change", () => {
+    updateSortOptions();
+    saveState();
+    const list = filteredIcons();
+    renderIcons();
+    if (list.length) setAvatar(list[0]);
+  });
   els.sortMode.addEventListener("change", async () => {
     saveState();
     renderIcons();
-    if (els.sortMode.value === "color") {
+    if (els.sourceMode.value === "voicemod" && els.sortMode.value === "color") {
       await ensureColorSort();
       renderIcons();
     }
   });
   els.avatarSelect.addEventListener("change", () => {
-    const icon = ICONS.find((item) => item.path === els.avatarSelect.value) || ICONS[0];
+    const icon = allIcons().find((item) => item.path === els.avatarSelect.value) || activeSourceIcons()[0] || VOICEMOD_ICONS[0];
     setAvatar(icon);
   });
   els.grid.addEventListener("click", (event) => {
+    hideCustomContextMenu();
     const button = event.target.closest("[data-avatar]");
     if (!button) return;
-    const icon = ICONS.find((item) => item.path === button.dataset.avatar) || ICONS[0];
+    const icon = allIcons().find((item) => item.path === button.dataset.avatar) || activeSourceIcons()[0] || VOICEMOD_ICONS[0];
     setAvatar(icon);
+  });
+  els.grid.addEventListener("contextmenu", (event) => {
+    const button = event.target.closest("[data-avatar]");
+    if (!button) return;
+    const icon = customIcons.find((item) => item.path === button.dataset.avatar);
+    if (!icon) return;
+    event.preventDefault();
+    showCustomContextMenu(event, icon.path);
+  });
+  document.addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-custom-menu-action]");
+    if (!actionButton) {
+      hideCustomContextMenu();
+      return;
+    }
+
+    const path = customContextPath;
+    hideCustomContextMenu();
+    if (actionButton.dataset.customMenuAction === "rename") renameCustomAvatar(path);
+    if (actionButton.dataset.customMenuAction === "delete") deleteCustomAvatar(path);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      hideCustomContextMenu();
+      closeCustomRenameDialog();
+    }
+  });
+  els.customAvatarInput.addEventListener("change", async () => {
+    const files = [...(els.customAvatarInput.files || [])].filter((file) => file.type.startsWith("image/"));
+    if (!files.length) return;
+    setCustomUploadBusy(true);
+    let restingText = "上传头像";
+    try {
+      const timestamp = Date.now();
+      const firstOrder = customIcons.length + 1;
+      const added = await Promise.all(files.map(async (file, index) => ({
+        id: `custom_${timestamp}_${index}`,
+        name: file.name.replace(/\.[^.]+$/, ""),
+        path: await cropAvatarFile(file),
+        source: "custom",
+        order: firstOrder + index,
+      })));
+      const previousIcons = customIcons;
+      customIcons = [...customIcons, ...added];
+      try {
+        saveCustomIcons();
+      } catch (error) {
+        customIcons = previousIcons;
+        throw error;
+      }
+      els.sourceMode.value = "custom";
+      updateSortOptions();
+      renderIcons();
+      setAvatar(added[0]);
+    } catch (error) {
+      console.error("Custom avatar crop failed", error);
+      restingText = "裁剪失败，请重试";
+    } finally {
+      els.customAvatarInput.value = "";
+      setCustomUploadBusy(false, restingText);
+      if (restingText !== "上传头像") {
+        window.setTimeout(() => {
+          if (!els.customAvatarInput.disabled) els.customAvatarPickerText.textContent = "上传头像";
+        }, 2200);
+      }
+    }
   });
   els.micBtn.addEventListener("click", () => {
     startMic().catch(() => {
@@ -538,6 +968,12 @@ async function init() {
     toggleFullscreen().catch(() => {
       els.fullscreenBtn.textContent = "全屏失败";
     });
+  });
+  els.scrollResourcesBtn?.addEventListener("click", () => {
+    els.resourceSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  els.scrollTopBtn?.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
   document.addEventListener("fullscreenchange", () => {
     const isAvatarFullscreen = document.fullscreenElement === els.stageCard;
