@@ -666,11 +666,13 @@ input[type="search"] {
   opacity: 0.72;
 }
 
-.upload-avatar-icon {
+.avatar-choice .upload-avatar-icon {
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
   width: 76px;
   height: 76px;
+  aspect-ratio: 1 / 1;
   border: 1px dashed rgba(33, 214, 178, 0.48);
   border-radius: 50%;
   color: var(--accent);
@@ -1044,7 +1046,7 @@ input[type="search"] {
     height: 66px;
   }
 
-  .upload-avatar-icon {
+  .avatar-choice .upload-avatar-icon {
     width: 66px;
     height: 66px;
   }
