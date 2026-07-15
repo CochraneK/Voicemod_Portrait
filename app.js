@@ -891,7 +891,7 @@ async function init() {
       const firstOrder = customIcons.length + 1;
       const added = await Promise.all(files.map(async (file, index) => ({
         id: `custom_${timestamp}_${index}`,
-        name: file.name.replace(/\.[^.]+$/, ""),
+        name: `avatar${firstOrder + index}`,
         path: await cropAvatarFile(file),
         source: "custom",
         order: firstOrder + index,
