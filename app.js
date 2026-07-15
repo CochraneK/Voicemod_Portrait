@@ -3,6 +3,7 @@ import { DICEBEER_ICONS } from "./dicebeer-data.js";
 
 const stateKey = "voicemod-avatar-state";
 const customAvatarKey = "voicemod-custom-avatars-v1";
+const customAvatarNameMigrationKey = "voicemod-custom-avatar-name-migration-v1";
 const backgroundDbName = "voicemod-avatar-assets";
 const backgroundStoreName = "backgrounds";
 const backgroundImageKey = "stage-background";
@@ -113,7 +114,18 @@ function readColorMetrics() {
 
 function readCustomIcons() {
   try {
-    return JSON.parse(localStorage.getItem(customAvatarKey) || "[]");
+    const icons = JSON.parse(localStorage.getItem(customAvatarKey) || "[]");
+    if (icons.length && localStorage.getItem(customAvatarNameMigrationKey) !== "done") {
+      const renamed = icons.map((icon, index) => ({
+        ...icon,
+        name: `avatar${index + 1}`,
+        order: index + 1,
+      }));
+      localStorage.setItem(customAvatarKey, JSON.stringify(renamed));
+      localStorage.setItem(customAvatarNameMigrationKey, "done");
+      return renamed;
+    }
+    return icons;
   } catch {
     return [];
   }
@@ -799,29 +811,19 @@ function tickMic() {
 async function init() {
   const saved = readState();
 
-  if (saved.sourceMode) els.sourceMode.value = saved.sourceMode;
+  els.sourceMode.value = "voicemod";
   updateSortOptions();
-  if (saved.bgMode) els.bgMode.value = saved.bgMode;
-  if (!saved.bgMode) els.bgMode.value = "black";
+  els.bgMode.value = "black";
   if (saved.customBg) els.customBg.value = saved.customBg;
   if (saved.sortMode && [...els.sortMode.options].some((option) => option.value === saved.sortMode)) {
     els.sortMode.value = saved.sortMode;
   }
   if (saved.sensitivity && saved.sensitivity !== "1.8") els.sensitivity.value = saved.sensitivity;
   if (saved.motion) els.motion.value = saved.motion;
-  if (saved.bgMode === "image") {
-    try {
-      const storedImage = await readBackgroundImage();
-      if (storedImage) useBackgroundImage(storedImage);
-      if (!storedImage) els.bgMode.value = "black";
-    } catch {
-      els.bgMode.value = "black";
-    }
-  }
   updateControlValues();
-  setDriveMode(saved.driveMode || "stage1");
+  setDriveMode("stage1");
 
-  setAvatar(allIcons().find((icon) => icon.path === saved.avatarPath) || VOICEMOD_ICONS.find((icon) => icon.name === "Clean Mic") || VOICEMOD_ICONS[0]);
+  setAvatar(VOICEMOD_ICONS.find((icon) => icon.name === "Clean Mic") || VOICEMOD_ICONS[0]);
   setEnergy(0);
 
   if (els.sourceMode.value === "voicemod" && els.sortMode.value === "color") {
