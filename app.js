@@ -3,8 +3,6 @@ import { DICEBEER_ICONS } from "./dicebeer-data.js";
 
 const stateKey = "voicemod-avatar-state";
 const customAvatarKey = "voicemod-custom-avatars-v1";
-const customDefaultHiddenKey = "voicemod-custom-default-hidden-v1";
-const customDefaultNamesKey = "voicemod-custom-default-names-v1";
 const backgroundDbName = "voicemod-avatar-assets";
 const backgroundStoreName = "backgrounds";
 const backgroundImageKey = "stage-background";
@@ -18,27 +16,7 @@ const DICEBEER_SOURCE_ICONS = DICEBEER_ICONS.map((icon) => ({
   ...icon,
   source: "dicebeer",
 }));
-const DEFAULT_CUSTOM_ICONS = [
-  {
-    id: "default_custom_yuto",
-    name: "示例头像 1",
-    path: "./assets/portraits/0005_voice_icon_Yuto.png",
-    source: "custom",
-    order: 1,
-    isDefaultCustom: true,
-  },
-  {
-    id: "default_custom_mei",
-    name: "示例头像 2",
-    path: "./assets/portraits/0009_voice_icon_Mei.png",
-    source: "custom",
-    order: 2,
-    isDefaultCustom: true,
-  },
-];
 const dicebeerStyleOrder = [...new Set(DICEBEER_SOURCE_ICONS.map((icon) => icon.style))];
-let hiddenDefaultCustomIds = readHiddenDefaultCustomIds();
-let defaultCustomNameOverrides = readDefaultCustomNameOverrides();
 let customIcons = readCustomIcons();
 const els = {
   search: document.querySelector("#searchInput"),
@@ -143,43 +121,6 @@ function readCustomIcons() {
 
 function saveCustomIcons() {
   localStorage.setItem(customAvatarKey, JSON.stringify(customIcons));
-}
-
-function readHiddenDefaultCustomIds() {
-  try {
-    return JSON.parse(localStorage.getItem(customDefaultHiddenKey) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveHiddenDefaultCustomIds() {
-  localStorage.setItem(customDefaultHiddenKey, JSON.stringify(hiddenDefaultCustomIds));
-}
-
-function readDefaultCustomNameOverrides() {
-  try {
-    return JSON.parse(localStorage.getItem(customDefaultNamesKey) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveDefaultCustomNameOverrides() {
-  localStorage.setItem(customDefaultNamesKey, JSON.stringify(defaultCustomNameOverrides));
-}
-
-function defaultCustomIcons() {
-  return DEFAULT_CUSTOM_ICONS
-    .filter((icon) => !hiddenDefaultCustomIds.includes(icon.id))
-    .map((icon) => ({
-      ...icon,
-      name: defaultCustomNameOverrides[icon.id] || icon.name,
-    }));
-}
-
-function customSourceIcons() {
-  return [...defaultCustomIcons(), ...customIcons];
 }
 
 function loadImageElement(file) {
@@ -296,13 +237,13 @@ function saveColorMetrics() {
 }
 
 function allIcons() {
-  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...customSourceIcons()];
+  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...customIcons];
 }
 
 function activeSourceIcons() {
   const source = els.sourceMode.value || "voicemod";
   if (source === "dicebeer") return DICEBEER_SOURCE_ICONS;
-  if (source === "custom") return customSourceIcons();
+  if (source === "custom") return customIcons;
   return VOICEMOD_ICONS;
 }
 
@@ -622,28 +563,15 @@ function setAvatar(icon) {
   renderIcons();
 }
 
-function findCustomIcon(path) {
-  return customSourceIcons().find((item) => item.path === path);
-}
-
 function commitCustomAvatarName(path, name) {
-  const icon = findCustomIcon(path);
+  const icon = customIcons.find((item) => item.path === path);
   if (!icon) return;
 
   const nextName = String(name || "").trim();
   if (!nextName || nextName === icon.name) return;
 
-  const normalizedName = nextName.slice(0, 60);
-  if (icon.isDefaultCustom) {
-    defaultCustomNameOverrides[icon.id] = normalizedName;
-    saveDefaultCustomNameOverrides();
-    icon.name = normalizedName;
-  } else {
-    const storedIcon = customIcons.find((item) => item.path === path);
-    if (storedIcon) storedIcon.name = normalizedName;
-    saveCustomIcons();
-    icon.name = normalizedName;
-  }
+  icon.name = nextName.slice(0, 60);
+  saveCustomIcons();
   if (selectedIcon.path === path) {
     selectedIcon = icon;
     els.avatar.alt = icon.name;
@@ -687,7 +615,7 @@ function ensureCustomRenameDialog() {
 }
 
 function openCustomRenameDialog(path) {
-  const icon = findCustomIcon(path);
+  const icon = customIcons.find((item) => item.path === path);
   if (!icon) return;
 
   const dialog = ensureCustomRenameDialog();
@@ -712,22 +640,16 @@ function renameCustomAvatar(path) {
 }
 
 function deleteCustomAvatar(path) {
-  const icon = findCustomIcon(path);
+  const icon = customIcons.find((item) => item.path === path);
   if (!icon) return;
   if (!window.confirm(`删除自定义头像“${icon.name}”？`)) return;
 
-  if (icon.isDefaultCustom) {
-    hiddenDefaultCustomIds = [...new Set([...hiddenDefaultCustomIds, icon.id])];
-    saveHiddenDefaultCustomIds();
-  } else {
-    customIcons = customIcons.filter((item) => item.path !== path);
-    saveCustomIcons();
-  }
+  customIcons = customIcons.filter((item) => item.path !== path);
+  saveCustomIcons();
 
   if (selectedIcon.path === path) {
-    const remainingCustomIcons = customSourceIcons();
-    const replacement = remainingCustomIcons[0] || VOICEMOD_ICONS[0];
-    if (!remainingCustomIcons.length) {
+    const replacement = customIcons[0] || VOICEMOD_ICONS[0];
+    if (!customIcons.length) {
       els.sourceMode.value = "voicemod";
       updateSortOptions();
     }
@@ -936,7 +858,7 @@ async function init() {
   els.grid.addEventListener("contextmenu", (event) => {
     const button = event.target.closest("[data-avatar]");
     if (!button) return;
-    const icon = findCustomIcon(button.dataset.avatar);
+    const icon = customIcons.find((item) => item.path === button.dataset.avatar);
     if (!icon) return;
     event.preventDefault();
     showCustomContextMenu(event, icon.path);
@@ -966,7 +888,7 @@ async function init() {
     let restingText = "上传头像";
     try {
       const timestamp = Date.now();
-      const firstOrder = DEFAULT_CUSTOM_ICONS.length + customIcons.length + 1;
+      const firstOrder = customIcons.length + 1;
       const added = await Promise.all(files.map(async (file, index) => ({
         id: `custom_${timestamp}_${index}`,
         name: file.name.replace(/\.[^.]+$/, ""),
