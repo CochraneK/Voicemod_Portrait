@@ -645,6 +645,7 @@ input[type="search"] {
 .avatar-choice {
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 8px;
   width: 100%;
   min-width: 0;
@@ -673,6 +674,16 @@ input[type="search"] {
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
+}
+
+.avatar-tile.has-style-label .avatar-choice {
+  height: 142px;
+  min-height: 142px;
+}
+
+.avatar-tile.has-style-label .avatar-choice img {
+  width: 70px;
+  height: 70px;
 }
 
 .custom-upload-choice {
@@ -972,9 +983,12 @@ input[type="search"] {
 
 .stage-card:fullscreen,
 .stage-card.avatar-fullscreen {
+  display: grid;
+  place-items: center;
   width: 100vw;
   height: 100vh;
   max-width: none;
+  padding: 0;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -992,6 +1006,7 @@ input[type="search"] {
 .stage-card:fullscreen .avatar-wrap,
 .stage-card.avatar-fullscreen .avatar-wrap {
   width: min(82vmin, 900px);
+  transform: translateY(calc(var(--lift) + 3vmin)) rotate(var(--tilt)) scale(var(--scale), calc(var(--scale) * var(--squash)));
 }
 
 .sr-only {
@@ -1073,6 +1088,16 @@ input[type="search"] {
     height: 112px;
     min-height: 112px;
     padding: 10px 5px 8px;
+  }
+
+  .avatar-tile.has-style-label .avatar-choice {
+    height: 126px;
+    min-height: 126px;
+  }
+
+  .avatar-tile.has-style-label .avatar-choice img {
+    width: 62px;
+    height: 62px;
   }
 
   .avatar-choice img {

@@ -403,8 +403,10 @@ function applyBackground() {
 function updateControlValues() {
   const sensitivity = Number(els.sensitivity.value);
   const maxSensitivity = Number(els.sensitivity.max);
+  const motion = Number(els.motion.value);
+  const maxMotion = Number(els.motion.max);
   els.sensitivityValue.textContent = sensitivity >= maxSensitivity ? "max" : `${sensitivity.toFixed(1)}x`;
-  els.motionValue.textContent = `${Number(els.motion.value).toFixed(1)}x`;
+  els.motionValue.textContent = motion >= maxMotion ? "max" : `${motion.toFixed(1)}x`;
 }
 
 function setMicStatus(label, mode = "") {
@@ -599,7 +601,7 @@ function renderIcons() {
     </div>
   ` : "";
   els.grid.innerHTML = uploadTile + displayList.map((icon) => `
-    <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""}">
+    <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""} ${icon.style ? "has-style-label" : ""}">
       <button
         class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
         type="button"
