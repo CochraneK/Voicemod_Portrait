@@ -614,6 +614,29 @@ input[type="search"] {
   gap: 9px;
 }
 
+.load-more-btn {
+  justify-self: center;
+  min-width: min(280px, 100%);
+  min-height: 42px;
+  margin-top: 4px;
+  padding: 10px 18px;
+  border-color: rgba(33, 214, 178, 0.38);
+  color: #e8ece5;
+  background: rgba(33, 214, 178, 0.12);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.load-more-btn:hover {
+  border-color: var(--accent);
+  color: #ffffff;
+  background: rgba(33, 214, 178, 0.2);
+}
+
+.load-more-btn[hidden] {
+  display: none;
+}
+
 .avatar-tile {
   position: relative;
   min-width: 0;
@@ -625,6 +648,7 @@ input[type="search"] {
   gap: 8px;
   width: 100%;
   min-width: 0;
+  height: 126px;
   min-height: 126px;
   padding: 12px 8px 10px;
   background: var(--surface);
@@ -671,8 +695,13 @@ input[type="search"] {
   flex: 0 0 auto;
   place-items: center;
   width: 76px;
+  min-width: 76px;
+  max-width: 76px;
   height: 76px;
+  min-height: 76px;
+  max-height: 76px;
   aspect-ratio: 1 / 1;
+  overflow: hidden;
   border: 1px dashed rgba(33, 214, 178, 0.48);
   border-radius: 50%;
   color: var(--accent);
@@ -680,6 +709,10 @@ input[type="search"] {
   font-size: 34px;
   font-weight: 450;
   line-height: 1;
+}
+
+.avatar-choice .upload-avatar-label {
+  display: block;
 }
 
 .avatar-choice img {
@@ -1037,6 +1070,7 @@ input[type="search"] {
   }
 
   .avatar-choice {
+    height: 112px;
     min-height: 112px;
     padding: 10px 5px 8px;
   }
@@ -1048,7 +1082,11 @@ input[type="search"] {
 
   .avatar-choice .upload-avatar-icon {
     width: 66px;
+    min-width: 66px;
+    max-width: 66px;
     height: 66px;
+    min-height: 66px;
+    max-height: 66px;
   }
 
   .scroll-actions {

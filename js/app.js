@@ -9,6 +9,7 @@ const backgroundDbName = "voicemod-avatar-assets";
 const backgroundStoreName = "backgrounds";
 const backgroundImageKey = "stage-background";
 const colorCacheKey = "voicemod-avatar-color-sort-v1";
+const AIFACE_BATCH_SIZE = 60;
 const VOICEMOD_ICONS = ICONS.map((icon, index) => ({
   ...icon,
   source: "voicemod",
@@ -40,6 +41,7 @@ const els = {
   customAvatarPicker: document.querySelector("#customAvatarPicker"),
   customAvatarPickerText: document.querySelector("#customAvatarPickerText"),
   customAvatarInput: document.querySelector("#customAvatarInput"),
+  loadMoreBtn: document.querySelector("#loadMoreBtn"),
   grid: document.querySelector("#avatarGrid"),
   stats: document.querySelector("#stats"),
   avatar: document.querySelector("#avatarImage"),
@@ -71,6 +73,7 @@ let visualEnergy = 0;
 let voiceState = "";
 let customContextPath = "";
 let customRenamePath = "";
+let aifaceVisibleCount = AIFACE_BATCH_SIZE;
 let loudUntil = 0;
 let lastPeak = 0;
 let audioContext;
@@ -558,11 +561,28 @@ function filteredIcons() {
   }));
 }
 
+function shouldPaginateAiface() {
+  return (els.sourceMode.value || "voicemod") === "aiface";
+}
+
+function resetAifacePagination() {
+  aifaceVisibleCount = AIFACE_BATCH_SIZE;
+}
+
 function renderIcons() {
   const list = filteredIcons();
   const suffix = els.sourceMode.value === "voicemod" && els.sortMode.value === "color" && !colorSortReady ? " · 正在计算颜色" : "";
   const sourceLabel = els.sourceMode.value || "voicemod";
-  els.stats.textContent = `${sourceLabel} · ${list.length}个头像${suffix}`;
+  const displayList = shouldPaginateAiface() ? list.slice(0, aifaceVisibleCount) : list;
+  const shownCount = displayList.length;
+  els.stats.textContent = shouldPaginateAiface()
+    ? `${sourceLabel} · ${shownCount}/${list.length}个头像${suffix}`
+    : `${sourceLabel} · ${list.length}个头像${suffix}`;
+  if (els.loadMoreBtn) {
+    const hasMore = shouldPaginateAiface() && shownCount < list.length;
+    els.loadMoreBtn.hidden = !hasMore;
+    els.loadMoreBtn.textContent = hasMore ? `加载更多（还剩 ${list.length - shownCount}）` : "加载更多";
+  }
   populateAvatarSelect(list);
   const uploadTile = sourceLabel === "custom" ? `
     <div class="avatar-tile upload-tile">
@@ -574,12 +594,11 @@ function renderIcons() {
         ${els.customAvatarInput.disabled ? "disabled" : ""}
       >
         <span class="upload-avatar-icon" aria-hidden="true">+</span>
-        <span>${escapeHtml(els.customAvatarInput.disabled ? "自动裁剪中…" : els.customAvatarPickerText.textContent || "上传头像")}</span>
-        <em>custom</em>
+        <span class="upload-avatar-label">${escapeHtml(els.customAvatarInput.disabled ? "自动裁剪中…" : els.customAvatarPickerText.textContent || "上传头像")}</span>
       </button>
     </div>
   ` : "";
-  els.grid.innerHTML = uploadTile + list.map((icon) => `
+  els.grid.innerHTML = uploadTile + displayList.map((icon) => `
     <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""}">
       <button
         class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
@@ -858,8 +877,12 @@ async function init() {
     ensureColorSort().then(renderIcons);
   }
 
-  els.search.addEventListener("input", renderIcons);
+  els.search.addEventListener("input", () => {
+    resetAifacePagination();
+    renderIcons();
+  });
   els.sourceMode.addEventListener("change", () => {
+    resetAifacePagination();
     updateSortOptions();
     saveState();
     const list = filteredIcons();
@@ -867,6 +890,7 @@ async function init() {
     if (list.length) setAvatar(list[0]);
   });
   els.sortMode.addEventListener("change", async () => {
+    resetAifacePagination();
     saveState();
     renderIcons();
     if (els.sourceMode.value === "voicemod" && els.sortMode.value === "color") {
@@ -877,6 +901,10 @@ async function init() {
   els.avatarSelect.addEventListener("change", () => {
     const icon = allIcons().find((item) => item.path === els.avatarSelect.value) || activeSourceIcons()[0] || VOICEMOD_ICONS[0];
     setAvatar(icon);
+  });
+  els.loadMoreBtn?.addEventListener("click", () => {
+    aifaceVisibleCount += AIFACE_BATCH_SIZE;
+    renderIcons();
   });
   els.grid.addEventListener("click", (event) => {
     hideCustomContextMenu();
