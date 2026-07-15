@@ -22,6 +22,14 @@ const AIFACE_SOURCE_ICONS = AIFACE_ICONS.map((icon) => ({
   ...icon,
   source: "aiface",
 }));
+const DEFAULT_CUSTOM_ICONS = Array.from({ length: 6 }, (_, index) => ({
+  id: `default_custom_${index + 1}`,
+  name: `avatar${index + 1}`,
+  path: `./assets/custom/avatar${index + 1}.png`,
+  source: "custom",
+  order: index + 1,
+  builtIn: true,
+}));
 const dicebeerStyleOrder = [...new Set(DICEBEER_SOURCE_ICONS.map((icon) => icon.style))];
 let customIcons = readCustomIcons();
 const els = {
@@ -247,6 +255,7 @@ function setCustomUploadBusy(isBusy, restingText = "上传头像") {
   els.customAvatarInput.disabled = isBusy;
   els.customAvatarPicker.classList.toggle("is-busy", isBusy);
   els.customAvatarPickerText.textContent = isBusy ? "自动裁剪中…" : restingText;
+  renderIcons();
 }
 
 function saveColorMetrics() {
@@ -254,21 +263,20 @@ function saveColorMetrics() {
 }
 
 function allIcons() {
-  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...AIFACE_SOURCE_ICONS, ...customIcons];
+  return [...VOICEMOD_ICONS, ...DICEBEER_SOURCE_ICONS, ...AIFACE_SOURCE_ICONS, ...DEFAULT_CUSTOM_ICONS, ...customIcons];
 }
 
 function activeSourceIcons() {
   const source = els.sourceMode.value || "voicemod";
   if (source === "dicebeer") return DICEBEER_SOURCE_ICONS;
   if (source === "aiface") return AIFACE_SOURCE_ICONS;
-  if (source === "custom") return customIcons;
+  if (source === "custom") return [...DEFAULT_CUSTOM_ICONS, ...customIcons];
   return VOICEMOD_ICONS;
 }
 
 function updateSourceControls() {
-  const showCustomUpload = els.sourceMode.value === "custom";
-  els.customAvatarPicker.hidden = !showCustomUpload;
-  els.libraryTools.classList.toggle("show-custom-upload", showCustomUpload);
+  els.customAvatarPicker.hidden = true;
+  els.libraryTools.classList.remove("show-custom-upload");
 }
 
 function updateSortOptions() {
@@ -556,7 +564,22 @@ function renderIcons() {
   const sourceLabel = els.sourceMode.value || "voicemod";
   els.stats.textContent = `${sourceLabel} · ${list.length}个头像${suffix}`;
   populateAvatarSelect(list);
-  els.grid.innerHTML = list.map((icon) => `
+  const uploadTile = sourceLabel === "custom" ? `
+    <div class="avatar-tile upload-tile">
+      <button
+        class="avatar-choice custom-upload-choice ${els.customAvatarInput.disabled ? "is-busy" : ""}"
+        type="button"
+        data-custom-upload
+        title="上传并自动裁剪自定义头像"
+        ${els.customAvatarInput.disabled ? "disabled" : ""}
+      >
+        <span class="upload-avatar-icon" aria-hidden="true">+</span>
+        <span>${escapeHtml(els.customAvatarInput.disabled ? "自动裁剪中…" : els.customAvatarPickerText.textContent || "上传头像")}</span>
+        <em>custom</em>
+      </button>
+    </div>
+  ` : "";
+  els.grid.innerHTML = uploadTile + list.map((icon) => `
     <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""}">
       <button
         class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
@@ -669,11 +692,7 @@ function deleteCustomAvatar(path) {
   saveCustomIcons();
 
   if (selectedIcon.path === path) {
-    const replacement = customIcons[0] || VOICEMOD_ICONS[0];
-    if (!customIcons.length) {
-      els.sourceMode.value = "voicemod";
-      updateSortOptions();
-    }
+    const replacement = activeSourceIcons()[0] || VOICEMOD_ICONS[0];
     setAvatar(replacement);
     return;
   }
@@ -861,6 +880,11 @@ async function init() {
   });
   els.grid.addEventListener("click", (event) => {
     hideCustomContextMenu();
+    const uploadButton = event.target.closest("[data-custom-upload]");
+    if (uploadButton) {
+      if (!els.customAvatarInput.disabled) els.customAvatarInput.click();
+      return;
+    }
     const button = event.target.closest("[data-avatar]");
     if (!button) return;
     const icon = allIcons().find((item) => item.path === button.dataset.avatar) || activeSourceIcons()[0] || VOICEMOD_ICONS[0];
@@ -899,7 +923,7 @@ async function init() {
     let restingText = "上传头像";
     try {
       const timestamp = Date.now();
-      const firstOrder = customIcons.length + 1;
+      const firstOrder = DEFAULT_CUSTOM_ICONS.length + customIcons.length + 1;
       const added = await Promise.all(files.map(async (file, index) => ({
         id: `custom_${timestamp}_${index}`,
         name: `avatar${firstOrder + index}`,

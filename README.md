@@ -20,6 +20,18 @@
 
 ![多个备选头像](docs/portrait-library.png)
 
+### DiceBeer 分类
+
+DiceBear 生成头像集中放在 `dicebeer` 分类中，便于和原版 Voicemod 头像分开筛选。
+
+![DiceBeer 分类头像](docs/dicebeer-library.png)
+
+### Custom 分类
+
+`custom` 分类用于浏览器端上传头像，支持自动裁剪、右键重命名和删除。
+
+![Custom 分类上传入口](docs/custom-library.png)
+
 ### 全屏效果
 
 全屏模式仅显示当前头像、麦克风驱动光圈和所选背景，适合直播、录屏或窗口采集。
@@ -37,7 +49,8 @@
 - 黑色、白色、绿幕、蓝幕、透明和自定义颜色背景
 - 支持选择本地背景图片，并保存在浏览器本地数据库中
 - 头像舞台全屏显示
-- `aiface` 分类可从本地 SeePrettyFace 数据集中随机抽取 300 张图片生成
+- `aiface` 分类已从本地人脸数据集中随机抽取 300 张图片，并处理为圆形透明头像
+- `custom` 分类内置 6 个默认自定义头像，后续上传会从 `avatar7` 开始命名
 - `custom` 分类支持浏览器端上传、自动裁剪、右键重命名和删除
 - 桌面和移动端响应式布局
 - 所有设置均在浏览器本地运行
@@ -83,15 +96,15 @@ http://127.0.0.1:8787/
 
 ## AI Face 数据集导入
 
-`aiface` 分类预留给本地下载的人脸数据集。当前推荐来源是 [a312863063/seeprettyface-dataset](https://github.com/a312863063/seeprettyface-dataset)，这是由 StyleGAN 生成的定制化人脸数据集。请先阅读原项目 README 和授权/使用限制；原项目说明可下载使用，但不要用于商业或不当用途。
+`aiface` 分类预留给本地下载的人脸数据集。本仓库当前示例从本地 `黄种人-FFHQ` 数据集中随机抽取 300 张图片，并统一处理为 256×256 圆形透明 PNG 头像。此前也可参考 [a312863063/seeprettyface-dataset](https://github.com/a312863063/seeprettyface-dataset)、AFD、CASIA-FaceV5 / CAS-PEAL 等公开入口。请先阅读原项目 README 和授权/使用限制；不要用于商业或不当用途。
 
 下载并解压数据集后，在项目目录运行：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\generate-aiface.ps1 -Source "D:\path\to\seeprettyface-dataset" -Count 300
+powershell -ExecutionPolicy Bypass -File .\scripts\generate-aiface.ps1 -Source "F:\BaiduNetdiskDownload\黄种人-FFHQ" -Count 300 -Size 256
 ```
 
-脚本会从数据集目录递归随机抽取 300 张 `.jpg` / `.jpeg` / `.png` / `.webp` 图片，复制到 `assets/aiface/`，并生成 `aiface-data.js`。页面刷新后即可在 `aiface` 分类中查看。
+脚本会从数据集目录递归随机抽取 300 张 `.jpg` / `.jpeg` / `.png` / `.webp` 图片，做中心裁剪、圆形透明遮罩和统一尺寸缩放，输出到 `assets/aiface/`，并生成 `js/aiface-data.js`。页面刷新后即可在 `aiface` 分类中查看。
 
 ## 项目结构
 
@@ -100,15 +113,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\generate-aiface.ps1 -Source "
 |-- assets/
 |   |-- portraits/       # 246 张头像图片
 |   |-- dicebeer/        # DiceBear 生成头像
+|   |-- custom/          # custom 分类默认头像
 |   `-- aiface/          # 本地 SeePrettyFace 抽样后生成的 AI 人脸头像
-|-- app.js               # 页面交互与麦克风驱动
-|-- aiface-data.js       # aiface 分类头像清单
-|-- data.js              # 头像名称和文件路径
-|-- dicebeer-data.js     # dicebeer 分类头像清单
 |-- index.html           # 页面结构
+|-- js/
+|   |-- app.js           # 页面交互与麦克风驱动
+|   |-- aiface-data.js   # aiface 分类头像清单
+|   |-- data.js          # voicemod 头像名称和文件路径
+|   `-- dicebeer-data.js # dicebeer 分类头像清单
 |-- docs/
 |   |-- screenshot.png
 |   |-- portrait-library.png
+|   |-- dicebeer-library.png
+|   |-- custom-library.png
 |   `-- fullscreen.png
 |-- scripts/
 |   |-- generate-aiface.ps1
@@ -122,6 +139,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\generate-aiface.ps1 -Source "
 
 感谢以下项目和数据来源：
 
+- [Voicemod](https://www.voicemod.net/)：感谢其官方头像素材，本项目的 `voicemod` 分类以这些头像作为基础头像来源。
 - [DiceBear](https://www.dicebear.com/)：开源头像生成库，本项目的 `dicebeer` 分类使用 DiceBear 风格生成。
 - [Avataaars](https://getavataaars.com/)：经典组合式头像项目，用作头像制作参考入口。
 - [Open Peeps](https://www.openpeeps.com/)：开源人物插画组件库，用作人物头像参考入口。
