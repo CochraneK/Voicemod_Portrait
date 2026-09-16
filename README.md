@@ -1,6 +1,19 @@
+<div align="center">
+
 # Voicemod Portrait
 
-一个纯前端、麦克风驱动的头像展示面板。页面包含 VoiceMod 官方 246 个头像，可根据麦克风音量让当前头像轻微缩放和上浮，不使用 AI，也不会上传音频。
+**麦克风驱动的本地头像展示面板 · 无 AI · 不上传音频**
+
+<p>
+  <img alt="Avatars" src="https://img.shields.io/badge/portraits-246-6C63FF">
+  <img alt="Audio" src="https://img.shields.io/badge/audio-local%20microphone-2F80ED">
+  <img alt="AI" src="https://img.shields.io/badge/AI-not%20required-27AE60">
+  <img alt="Frontend" src="https://img.shields.io/badge/runtime-browser-F2994A">
+</p>
+
+</div>
+
+页面把浏览器实时麦克风能量映射为头像缩放、上浮和状态动画，适合直播、录屏、窗口采集或桌面陪伴。所有驱动计算都在本机浏览器完成。
 
 ![Voicemod Portraits 页面截图](docs/screenshot.png)
 
