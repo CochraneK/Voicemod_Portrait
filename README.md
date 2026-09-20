@@ -13,6 +13,8 @@
 
 </div>
 
+[**Architecture**](docs/architecture.md) · [**Agent handoff**](HANDOFF.md) · [**Status**](STATUS.md) · [**Asset provenance**](DATA_PROVENANCE.md)
+
 页面把浏览器实时麦克风能量映射为头像缩放、上浮和状态动画，适合直播、录屏、窗口采集或桌面陪伴。所有驱动计算都在本机浏览器完成。
 
 ![Voicemod Portraits 页面截图](docs/screenshot.png)
@@ -107,9 +109,9 @@ http://127.0.0.1:8787/
 
 麦克风音频仅通过浏览器 Web Audio API 在本机分析，页面不录音、不保存音频，也没有后端服务。本地背景图片保存在当前站点的 IndexedDB 中。
 
-## AI Face 数据集导入
+## AI Face 数据集导入（需先核对许可）
 
-`aiface` 分类预留给本地下载的人脸数据集。本仓库当前示例从本地 `黄种人-FFHQ` 数据集中随机抽取 300 张图片，并统一处理为 256×256 圆形透明 PNG 头像。此前也可参考 [a312863063/seeprettyface-dataset](https://github.com/a312863063/seeprettyface-dataset)、AFD、CASIA-FaceV5 / CAS-PEAL 等公开入口。请先阅读原项目 README 和授权/使用限制；不要用于商业或不当用途。
+`aiface` 分类预留给本地下载的人脸数据集。本仓库当前示例从本地 `黄种人-FFHQ` 数据集中随机抽取 300 张图片，并统一处理为 256×256 圆形透明 PNG 头像。此前也可参考 [a312863063/seeprettyface-dataset](https://github.com/a312863063/seeprettyface-dataset)、AFD、CASIA-FaceV5 / CAS-PEAL 等数据来源入口。**可下载不等于可重新分发。** 在把图片或衍生头像提交到公开仓库、Pages 或商业包之前，必须核对源数据许可、衍生作品条款与署名要求；详见 [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md)。
 
 下载并解压数据集后，在项目目录运行：
 
@@ -161,3 +163,20 @@ powershell -ExecutionPolicy Bypass -File .\scripts\generate-aiface.ps1 -Source "
 - [CASIA-FaceV5 / CAS-PEAL](https://iapr-tc4.org/face-datasets/)：人脸数据集参考入口。
 
 使用任何第三方图片、头像或数据集前，请自行确认对应项目的许可、署名要求、用途限制和肖像权风险。
+
+
+## Agent continuity
+
+新的 Agent / 对话 / 电脑优先读取：
+
+```text
+AGENTS.md
+→ HANDOFF.md
+→ STATUS.md
+→ DECISIONS.md
+→ DATA_PROVENANCE.md
+→ docs/architecture.md
+→ index.html / js/app.js
+```
+
+Git 是长期 canonical state。麦克风本地处理边界和第三方资产 provenance gate 不应依赖聊天上下文保存。
