@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>页面走丢了 · Voicemod Portraits</title>
+    <style>
+      :root {
+        --bg: #0c0e0d;
+        --surface: #141715;
+        --surface-soft: #101311;
+        --text: #f4f5ef;
+        --muted: #939b92;
+        --line: #2b312d;
+        --accent: #21d6b2;
+        --accent-soft: rgba(33, 214, 178, 0.13);
+        color-scheme: dark;
+        font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% 18%, var(--accent-soft), transparent 46%),
+          var(--bg);
+      }
+
+      .lost-card {
+        width: min(520px, 100%);
+        padding: 40px 32px;
+        text-align: center;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--surface);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+      }
+
+      .brand-kicker {
+        margin: 0 0 12px;
+        font-size: 12px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .code {
+        margin: 0;
+        font-size: clamp(64px, 18vw, 104px);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.04em;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 16px 0 10px;
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0 0 24px;
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      a {
+        display: inline-block;
+        padding: 11px 22px;
+        font-size: 14px;
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--text);
+        background: var(--surface-soft);
+        transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+      }
+
+      a.primary {
+        border-color: transparent;
+        color: #06201a;
+        background: var(--accent);
+        font-weight: 600;
+      }
+
+      a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      a.primary:hover {
+        border-color: transparent;
+        color: #06201a;
+        background: #4ae6c8;
+      }
+
+      .target {
+        margin-top: 20px;
+        font-size: 12px;
+        color: var(--muted);
+        word-break: break-all;
+      }
+
+      code {
+        font-family: Consolas, "Cascadia Mono", monospace;
+        color: var(--warning, #e8bf55);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="lost-card">
+      <p class="brand-kicker">Avatar Studio</p>
+      <p class="code">404</p>
+      <h1>这个地址没有头像</h1>
+      <p>页面可能被重命名或移动了。回到首页选一个头像，打开麦克风就能开始。</p>
+
+      <div class="actions">
+        <a class="primary" id="homeLink" href="./">回到头像面板</a>
+        <a id="repoLink" href="https://github.com/CochraneK/Voicemod_Portrait">查看仓库</a>
+      </div>
+
+      <p class="target">请求路径：<code id="requestPath">/</code></p>
+    </main>
+
+    <script>
+      // Pages 项目站点部署在 /<repo>/ 子路径下，404 可能落在任意深度的地址，
+      // 因此用当前路径的第一段拼出站点根，避免写死仓库名。
+      (function () {
+        var segment = location.pathname.split("/").filter(Boolean)[0];
+        if (segment) {
+          document.getElementById("homeLink").setAttribute("href", "/" + segment + "/");
+        }
+        document.getElementById("requestPath").textContent = location.pathname;
+      })();
+    </script>
+  </body>
+</html>

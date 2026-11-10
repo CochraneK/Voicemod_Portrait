@@ -5,6 +5,7 @@
 **麦克风驱动的本地头像展示面板 · 无 AI · 不上传音频**
 
 <p>
+  <a href="https://cochranek.github.io/Voicemod_Portrait/"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-21D6B2"></a>
   <img alt="Avatars" src="https://img.shields.io/badge/portraits-246-6C63FF">
   <img alt="Audio" src="https://img.shields.io/badge/audio-local%20microphone-2F80ED">
   <img alt="AI" src="https://img.shields.io/badge/AI-not%20required-27AE60">
@@ -13,7 +14,9 @@
 
 </div>
 
-[**Architecture**](docs/architecture.md) · [**Agent handoff**](HANDOFF.md) · [**Status**](STATUS.md) · [**Asset provenance**](DATA_PROVENANCE.md)
+[**在线演示**](https://cochranek.github.io/Voicemod_Portrait/) · [**Architecture**](docs/architecture.md) · [**Agent handoff**](HANDOFF.md) · [**Status**](STATUS.md) · [**Asset provenance**](DATA_PROVENANCE.md)
+
+> **线上版本**：<https://cochranek.github.io/Voicemod_Portrait/> —— 由 GitHub Pages 从 `main` 分支自动发布。必须用 `https://` 打开，麦克风只在安全上下文（HTTPS 或 `localhost`）下可用。
 
 页面把浏览器实时麦克风能量映射为头像缩放、上浮和状态动画，适合直播、录屏、窗口采集或桌面陪伴。所有驱动计算都在本机浏览器完成。
 
@@ -97,6 +100,23 @@ http://127.0.0.1:8787/
 ```
 
 不能直接双击 `index.html`，因为浏览器通常会阻止本地文件加载 ES Modules。
+
+## 在线部署（GitHub Pages）
+
+线上版本：<https://cochranek.github.io/Voicemod_Portrait/>
+
+部署由 `.github/workflows/pages.yml` 负责，推送到 `main` 即自动构建发布：
+
+1. `Settings → Pages → Source` 选择 **GitHub Actions**（不是 “Deploy from a branch”）；
+2. 推送到 `main`，或在 `Actions → Deploy GitHub Pages` 手动 `Run workflow`；
+3. 部署完成后线上立即更新，无需额外构建步骤。
+
+要点：
+
+- 仓库根目录的 `.nojekyll` 保留，静态资源按原样发布，不经过 Jekyll 处理；
+- 所有资源引用都使用 `./` 相对路径，因此能直接适配 `/<repo>/` 子路径，不需要改 base；
+- 麦克风需要安全上下文，线上必须走 `https://`；本地用 `http://127.0.0.1` 也是安全上下文；
+- 仓库根目录的 `404.html` 会被 Pages 用作自定义 404 页面。
 
 ## 使用说明
 
