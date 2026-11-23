@@ -1228,5 +1228,139 @@ export const ICONS = [
     "id": "retry_voice_icon_Zombie_Soldier_277d1f6a",
     "name": "Zombie Soldier",
     "path": "./assets/portraits/retry_voice_icon_Zombie_Soldier_277d1f6a.png"
+  },  {
+    "id": "voicemod_8_bits",
+    "name": "8-Bits",
+    "path": "./assets/portraits/sdk_8bits.png"
+  },
+  {
+    "id": "voicemod_aphonic",
+    "name": "Aphonic",
+    "path": "./assets/portraits/sdk_aphonic.png"
+  },
+  {
+    "id": "voicemod_birthday_beach",
+    "name": "Birthday Beach",
+    "path": "./assets/portraits/sdk_birthday.png"
+  },
+  {
+    "id": "voicemod_birthday_capella",
+    "name": "Birthday Capella",
+    "path": "./assets/portraits/sdk_birthday.png"
+  },
+  {
+    "id": "voicemod_birthday_reggae",
+    "name": "Birthday Reggae",
+    "path": "./assets/portraits/sdk_birthday.png"
+  },
+  {
+    "id": "voicemod_birthday_rock",
+    "name": "Birthday Rock",
+    "path": "./assets/portraits/sdk_birthday.png"
+  },
+  {
+    "id": "voicemod_child_to_adult",
+    "name": "Child to Adult",
+    "path": "./assets/portraits/sdk_children-to-adult.png"
+  },
+  {
+    "id": "voicemod_cop_chase",
+    "name": "Cop Chase",
+    "path": "./assets/portraits/sdk_cop.png"
+  },
+  {
+    "id": "voicemod_cop_radio",
+    "name": "Cop Radio",
+    "path": "./assets/portraits/sdk_cop.png"
+  },
+  {
+    "id": "voicemod_cop_walkie_talkie",
+    "name": "Cop Walkie-Talkie",
+    "path": "./assets/portraits/sdk_cop.png"
+  },
+  {
+    "id": "voicemod_engine",
+    "name": "Engine",
+    "path": "./assets/portraits/sdk_engine.png"
+  },
+  {
+    "id": "voicemod_holiday_tune",
+    "name": "Holiday Tune",
+    "path": "./assets/portraits/sdk_holiday-tune.png"
+  },
+  {
+    "id": "voicemod_kong",
+    "name": "Kong",
+    "path": "./assets/portraits/sdk_kong.png"
+  },
+  {
+    "id": "voicemod_man_to_woman",
+    "name": "Man to Woman",
+    "path": "./assets/portraits/sdk_man-to-woman.png"
+  },
+  {
+    "id": "voicemod_man_to_woman_2",
+    "name": "Man to Woman 2",
+    "path": "./assets/portraits/sdk_man-to-woman-2.png"
+  },
+  {
+    "id": "voicemod_romantic_paris",
+    "name": "Romantic Paris",
+    "path": "./assets/portraits/sdk_romantic-ulala.png"
+  },
+  {
+    "id": "voicemod_romantic_ulala",
+    "name": "Romantic Ulala",
+    "path": "./assets/portraits/sdk_romantic-ulala.png"
+  },
+  {
+    "id": "voicemod_second_life",
+    "name": "Second Life",
+    "path": "./assets/portraits/sdk_second-life.png"
+  },
+  {
+    "id": "voicemod_sleepyhead",
+    "name": "Sleepyhead",
+    "path": "./assets/portraits/sdk_sleepyhead.png"
+  },
+  {
+    "id": "voicemod_speechifier_ovation",
+    "name": "Speechifier Ovation",
+    "path": "./assets/portraits/sdk_speechifier.png"
+  },
+  {
+    "id": "voicemod_speechifier_protest",
+    "name": "Speechifier Protest",
+    "path": "./assets/portraits/sdk_speechifier.png"
+  },
+  {
+    "id": "voicemod_storyteller_action",
+    "name": "Storyteller Action",
+    "path": "./assets/portraits/sdk_storyteller-happy.png"
+  },
+  {
+    "id": "voicemod_storyteller_drama",
+    "name": "Storyteller Drama",
+    "path": "./assets/portraits/sdk_storyteller-happy.png"
+  },
+  {
+    "id": "voicemod_storyteller_happy",
+    "name": "Storyteller Happy",
+    "path": "./assets/portraits/sdk_storyteller-happy.png"
+  },
+  {
+    "id": "voicemod_student_hall",
+    "name": "Student Hall",
+    "path": "./assets/portraits/sdk_student-playtime.png"
+  },
+  {
+    "id": "voicemod_student_playtime",
+    "name": "Student Playtime",
+    "path": "./assets/portraits/sdk_student-playtime.png"
+  },
+  {
+    "id": "voicemod_woman_to_man",
+    "name": "Woman to Man",
+    "path": "./assets/portraits/sdk_woman-to-man.png"
   }
 ];
