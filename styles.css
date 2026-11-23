@@ -642,6 +642,32 @@ input[type="search"] {
   min-width: 0;
 }
 
+/* 头像卡片旁的官方音色试听小按钮 */
+.voice-preview-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #3a4740;
+  border-radius: 50%;
+  background: rgba(33, 214, 178, 0.14);
+  color: #21d6b2;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, transform .1s, color .15s;
+}
+.voice-preview-btn:hover { background: rgba(33, 214, 178, 0.3); transform: scale(1.08); }
+.voice-preview-btn:active { transform: scale(.94); }
+.voice-preview-btn.is-playing { background: #21d6b2; color: #08110f; border-color: #21d6b2; }
+.has-voice-preview .avatar-choice { padding-right: 30px; }
+
 .avatar-choice {
   display: grid;
   justify-items: center;

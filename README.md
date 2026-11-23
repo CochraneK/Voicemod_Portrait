@@ -59,6 +59,7 @@ DiceBear 生成头像集中放在 `dicebeer` 分类中，便于和原版 Voicemo
 ## 功能
 
 - 246 个头像，支持搜索、缩略图选择和下拉选择
+- **音色试听**：68 个头像卡片右上角带 ▶ 按钮，点击可听对应的 Voicemod 官方音色试听音，方便把"头像"和"音色"对应起来（音频来自 Voicemod 官网，版权归其所有，见 [DATA_PROVENANCE.md](DATA_PROVENANCE.md)）
 - 头像库支持 `voicemod`、`dicebeer`、`aiface` 和 `custom` 分类
 - 默认一阶声音驱动：随麦克风音量放大、缩小、上浮
 - 可切换二阶声音驱动：加入 idle / talking / loud 状态和更细的动作反馈

@@ -1,6 +1,30 @@
 import { ICONS } from "./data.js";
 import { DICEBEER_ICONS } from "./dicebeer-data.js";
 import { AIFACE_ICONS } from "./aiface-data.js";
+import { VOICE_PREVIEWS } from "./voice-preview-map.js";
+
+// 官方试听音频播放器（单例）。映射表用头像 id 关联音色。
+let previewAudio = null;
+let previewBtn = null;
+function stopPreview() {
+  if (previewAudio) { previewAudio.pause(); previewAudio.currentTime = 0; }
+  if (previewBtn) { previewBtn.classList.remove("is-playing"); previewBtn.textContent = "▶"; }
+  previewAudio = null;
+  previewBtn = null;
+}
+function togglePreview(iconId, btn) {
+  if (previewBtn === btn && previewAudio && !previewAudio.paused) { stopPreview(); return; }
+  stopPreview();
+  const info = VOICE_PREVIEWS[iconId];
+  if (!info) return;
+  previewAudio = new Audio(info.file);
+  previewBtn = btn;
+  btn.textContent = "⏸";
+  btn.classList.add("is-playing");
+  previewAudio.onended = stopPreview;
+  previewAudio.onerror = stopPreview;
+  previewAudio.play().catch(stopPreview);
+}
 
 const stateKey = "voicemod-avatar-state";
 const customAvatarKey = "voicemod-custom-avatars-v1";
@@ -600,8 +624,13 @@ function renderIcons() {
       </button>
     </div>
   ` : "";
-  els.grid.innerHTML = uploadTile + displayList.map((icon) => `
-    <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""} ${icon.style ? "has-style-label" : ""}">
+  els.grid.innerHTML = uploadTile + displayList.map((icon) => {
+    const preview = VOICE_PREVIEWS[icon.id];
+    const previewBtnHtml = preview
+      ? `<button class="voice-preview-btn" type="button" data-voice-preview="${escapeHtml(icon.id)}" title="试听音色：${escapeHtml(preview.name)}（Voicemod 官方）">▶</button>`
+      : "";
+    return `
+    <div class="avatar-tile ${icon.source === "custom" ? "custom-tile" : ""} ${icon.style ? "has-style-label" : ""} ${preview ? "has-voice-preview" : ""}">
       <button
         class="avatar-choice ${icon.path === selectedIcon.path ? "selected" : ""}"
         type="button"
@@ -612,8 +641,9 @@ function renderIcons() {
         <span>${escapeHtml(icon.name)}</span>
         ${icon.style ? `<em>${escapeHtml(icon.style)}</em>` : ""}
       </button>
+      ${previewBtnHtml}
     </div>
-  `).join("");
+  `; }).join("");
 }
 
 function setAvatar(icon) {
@@ -910,6 +940,13 @@ async function init() {
   });
   els.grid.addEventListener("click", (event) => {
     hideCustomContextMenu();
+    const voiceBtn = event.target.closest("[data-voice-preview]");
+    if (voiceBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      togglePreview(voiceBtn.dataset.voicePreview, voiceBtn);
+      return;
+    }
     const uploadButton = event.target.closest("[data-custom-upload]");
     if (uploadButton) {
       if (!els.customAvatarInput.disabled) els.customAvatarInput.click();

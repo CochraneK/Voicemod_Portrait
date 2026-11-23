@@ -10,6 +10,7 @@ This repository mixes code written for this project with avatar/image sources th
 | `dicebeer` | DiceBear-generated avatars | Generated assets; source/license/attribution should be retained | Verify generated style license/attribution |
 | `voicemod` | Avatar material associated with Voicemod | Third-party branded/source material | **Unresolved redistribution gate** |
 | `aiface` | Sample generated from a local dataset labelled `黄种人-FFHQ` | 300 derived PNG avatars are currently bundled | **Unresolved dataset/derivative redistribution gate** |
+| `voice_previews` | Official voice-demo audio clips from `https://www.voicemod.net/voice-changer-demos` (68 clips matched to avatar names by exact name). Original source URL for every clip is recorded in `js/voice-preview-map.js` (`source` field) | Bundled as `.m4a`/`.mp3` under `assets/voice_previews/`; playable via ▶ buttons on matched avatar cards | **Third-party copyrighted audio — personal preview only. Before any public/commercial claim, confirm Voicemod ToS or replace files with source links only.** |
 
 ## Rules
 
