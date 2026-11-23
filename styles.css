@@ -642,31 +642,44 @@ input[type="search"] {
   min-width: 0;
 }
 
-/* 头像卡片旁的官方音色试听小按钮 */
+/* 头像卡片旁的官方音色试听小按钮 —— 用 SVG 背景图标（不用 ▶ 字符，避免字体挤压变形） */
 .voice-preview-btn {
   position: absolute;
   top: 6px;
   right: 6px;
   z-index: 3;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
+  min-height: 0;      /* 覆盖全局 button{min-height:40px}，否则会被撑成椭圆 */
+  min-width: 0;
   padding: 0;
-  border: 1px solid #3a4740;
+  border: 1px solid rgba(33, 214, 178, 0.45);
   border-radius: 50%;
-  background: rgba(33, 214, 178, 0.14);
-  color: #21d6b2;
-  font-size: 11px;
-  line-height: 1;
+  background-color: rgba(33, 214, 178, 0.16);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2321d6b2'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 56% 50%;
+  background-size: 13px 13px;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s, transform .1s, color .15s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: background-color .15s, border-color .15s, transform .1s;
 }
-.voice-preview-btn:hover { background: rgba(33, 214, 178, 0.3); transform: scale(1.08); }
+.voice-preview-btn:hover {
+  background-color: rgba(33, 214, 178, 0.36);
+  border-color: #21d6b2;
+  transform: scale(1.1);
+}
+.voice-preview-btn:focus-visible { outline: 2px solid #21d6b2; outline-offset: 2px; }
 .voice-preview-btn:active { transform: scale(.94); }
-.voice-preview-btn.is-playing { background: #21d6b2; color: #08110f; border-color: #21d6b2; }
-.has-voice-preview .avatar-choice { padding-right: 30px; }
+.voice-preview-btn.is-playing {
+  background-color: #21d6b2;
+  border-color: #21d6b2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2308110f'%3E%3Cpath d='M6 4h4v16H6zM14 4h4v16h-4z'/%3E%3C/svg%3E");
+}
+.has-voice-preview .avatar-choice { padding-right: 32px; }
 
 .avatar-choice {
   display: grid;
