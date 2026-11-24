@@ -610,7 +610,7 @@ input[type="search"] {
 
 .avatar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   gap: 9px;
 }
 
@@ -692,7 +692,7 @@ input[type="search"] {
   min-width: 0;
   height: 126px;
   min-height: 126px;
-  padding: 12px 8px 10px;
+  padding: 12px 6px 10px;
   background: var(--surface);
 }
 
